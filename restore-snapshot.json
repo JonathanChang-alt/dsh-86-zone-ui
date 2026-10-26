@@ -1,0 +1,32 @@
+{
+  "name": "dsh-profile-desktop",
+  "private": true,
+  "dependencies": {
+    "@dsh-external/dsh-blender-plugin": "link:/Users/jonathanchang/Documents/这是一个乱七八糟的工作文件夹/j20_model/tools/dsh-blender-plugin-v2.1.0",
+    "@dsh-pet/bridge": "link:/Applications/dsh-pet-standalone-webm-chat.app/Contents/Frameworks/integrations/dsh-pet-bridge",
+    "@linxin666/dsh-web-all": "0.4.1",
+    "dsh-86-zone-ui": "link:/Users/jonathanchang/Documents/长征Loji/plugins/dsh-86-zone-ui",
+    "dsh-agent-teams-fish": "0.7.0",
+    "dsh-client-liang-intensity-skin": "file:/Users/jonathanchang/.dsh/skin-packages/dsh-client-liang-intensity-skin-0.1.7.tgz",
+    "dsh-context": "0.72.0",
+    "dsh-cyber-red-ui": "link:/Users/jonathanchang/.dsh/plugin-packages/dsh-cyber-red-ui",
+    "dsh-skin-market": "0.1.56",
+    "dsh-startup-screen": "file:/Users/jonathanchang/.dsh/plugin-packages/dsh-startup-screen-1.1.0.tgz",
+    "dsh-startup-secret": "file:/Users/jonathanchang/.dsh/plugin-packages/dsh-startup-secret-1.4.0.tgz"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@linxin666/dsh-web-all",
+        "dsh-skin-market",
+        "dsh-context",
+        "dsh-startup-secret",
+        "@dsh-external/dsh-blender-plugin",
+        "@dsh-pet/bridge",
+        "dsh-86-zone-ui"
+      ]
+    }
+  }
+}

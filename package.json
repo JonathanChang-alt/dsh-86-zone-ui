@@ -1,0 +1,53 @@
+{
+  "name": "dsh-86-zone-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "86 EIGHTY-SIX themed skin plugin for DeepSeek Harness: line-art HUD, tactical status rail with live metrics, hex rain, event stream.",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "theme",
+    "86",
+    "eighty-six",
+    "blue",
+    "scanline"
+  ],
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "assets"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.0-rc <5"
+  },
+  "engines": {
+    "node": "^22.15.0 || >=24.0.0"
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check client.js",
+    "check:self": "node tests/selfcheck.mjs"
+  }
+}

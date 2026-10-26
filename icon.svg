@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#59e0ff"/>
+      <stop offset="1" stop-color="#1d6ea8"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="18" fill="#04080f"/>
+  <path d="M64 12 L108 36 L108 92 L64 116 L20 92 L20 36 Z" fill="none" stroke="url(#g)" stroke-width="2"/>
+  <path d="M64 22 L99 40 L99 88 L64 106 L29 88 L29 40 Z" fill="none" stroke="#3fb6ff" stroke-width="0.8" opacity="0.45"/>
+  <line x1="20" y1="64" x2="108" y2="64" stroke="#3fb6ff" stroke-width="0.6" opacity="0.3"/>
+  <text x="64" y="76" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="34" font-weight="700" letter-spacing="2" fill="url(#g)">86</text>
+  <text x="64" y="94" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="7" letter-spacing="4" fill="#7fb2e8" opacity="0.8">ZONE</text>
+</svg>

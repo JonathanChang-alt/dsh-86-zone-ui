@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+._*
+
+# dependencies
+node_modules/
+package-lock.json
+
+# runtime output from the plugin itself
+debug-report.json
+
+# working material: candidate art, intermediate renders, comparison sheets.
+# The shipped screenshots live in docs/.
+preview/
+
+__pycache__/
+*.pyc
+
+# editors
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,8 @@
+assets/avatar.png
+---------------
+来源：生图模型按 PROMPTS.md 的「主提示词（头肩像）」生成，用户提供（2026-10-26）
+处理：裁剪 200,0,1140,940 → 色阶归一化（黑 18 / 白 248）→ LANCZOS 缩到 512×512
+呈现：HUD 默认 avatarMode = "id"（ID 卡：纸面青色 + 墨色线）
+      这版是实心墨块画法，用 "duotone" 会把帽檐变成霓虹青块、脸变黑，别切错
+重做：把新图放进 preview/candidates/ 后
+      python3 scripts/contact.py preview/candidates/*.png -o preview/candidates.png
