@@ -175,45 +175,73 @@ function readDisk() {
   }
 }
 
-/* Network throughput. macOS exposes per-interface cumulative counters through
-   netstat -ib; the rate is the delta over the sample interval. Only physical
-   en* interfaces that publish a MAC address are summed, because the <Link#N>
-   rows omit the address column and would shift the parse by one field. */
+/* Network throughput. Both platforms expose cumulative byte counters, so the
+   same delta logic serves them; only the sampling differs.
+
+   macOS: netstat -ib, summed over physical en* rows that publish a MAC address
+          (the <Link#N> rows omit the address column and would shift the parse
+          by one field).
+   Windows: netstat -e prints a single "Bytes" row with received/sent totals.
+          It is machine-wide rather than per-interface, which is exactly what
+          a single throughput readout wants. */
 let previousNet = null;
 
+function rateFrom(rx, tx) {
+  const now = Date.now();
+  const sample = { rx, tx, at: now };
+  const previous = previousNet;
+  previousNet = sample;
+  if (!previous) return null;
+  const seconds = (now - previous.at) / 1000;
+  if (!(seconds > 0.2)) return null;
+  /* Compare against the *previous* sample — overwriting the reference before
+     subtracting made every rate come out as exactly zero. */
+  return {
+    rxBps: Math.max(0, (sample.rx - previous.rx) / seconds),
+    txBps: Math.max(0, (sample.tx - previous.tx) / seconds),
+  };
+}
+
+async function readDarwinCounters() {
+  const { stdout } = await execFileAsync("/usr/sbin/netstat", ["-ibn"], { timeout: 2000, maxBuffer: 512 * 1024 });
+  let rx = 0;
+  let tx = 0;
+  let seen = 0;
+  const line = /^en\d+\s+\d+\s+<Link#\d+>\s+([0-9a-f:]{11,17})\s+(\d+)\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/;
+  for (const row of stdout.split("\n")) {
+    const match = line.exec(row);
+    if (!match) continue;
+    rx += Number(match[3]) || 0;
+    tx += Number(match[4]) || 0;
+    seen += 1;
+  }
+  return seen ? { rx, tx } : null;
+}
+
+async function readWindowsCounters() {
+  const exe = `${process.env.SystemRoot || "C:\\Windows"}\\System32\\netstat.exe`;
+  const { stdout } = await execFileAsync(exe, ["-e"], { timeout: 2000, maxBuffer: 256 * 1024, windowsHide: true });
+  for (const row of stdout.split("\n")) {
+    const match = /^\s*Bytes\s+(\d+)\s+(\d+)/i.exec(row);
+    if (match) return { rx: Number(match[1]), tx: Number(match[2]) };
+  }
+  return null;
+}
+
 async function readNetwork() {
-  if (process.platform !== "darwin") return null;
   try {
-    const { stdout } = await execFileAsync("/usr/sbin/netstat", ["-ibn"], { timeout: 2000, maxBuffer: 512 * 1024 });
-    let rx = 0;
-    let tx = 0;
-    let seen = 0;
-    const line = /^en\d+\s+\d+\s+<Link#\d+>\s+([0-9a-f:]{11,17})\s+(\d+)\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/;
-    for (const row of stdout.split("\n")) {
-      const match = line.exec(row);
-      if (!match) continue;
-      rx += Number(match[3]) || 0;
-      tx += Number(match[4]) || 0;
-      seen += 1;
-    }
-    if (!seen) return null;
-    const now = Date.now();
-    const sample = { rx, tx, at: now };
-    const previous = previousNet;
-    previousNet = sample;
-    if (!previous) return null;
-    const seconds = (now - previous.at) / 1000;
-    if (!(seconds > 0.2)) return null;
-    /* Compare against the *previous* sample — overwriting the reference before
-       subtracting made every rate come out as exactly zero. */
-    return {
-      rxBps: Math.max(0, (sample.rx - previous.rx) / seconds),
-      txBps: Math.max(0, (sample.tx - previous.tx) / seconds),
-    };
+    let counters = null;
+    if (process.platform === "darwin") counters = await readDarwinCounters();
+    else if (process.platform === "win32") counters = await readWindowsCounters();
+    if (!counters) return null;
+    return rateFrom(counters.rx, counters.tx);
   } catch {
     return null;
   }
 }
+
+/* ---------------------------------------------------------------- sampling */
+
 
 let networkCache = null;
 

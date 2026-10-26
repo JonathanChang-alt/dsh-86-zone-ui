@@ -81,6 +81,25 @@ pnpm add link:$HOME/Documents/plugins/dsh-86-zone-ui
 
 > 只有宿主文件（`index.js`）改动需要重启；客户端（`client.js`）刷新界面即可。
 
+## 平台支持
+
+| 功能 | macOS | Windows | Linux |
+|---|---|---|---|
+| 皮肤 / HUD / 状态台 / 数据雨 / 事件流 | ✅ | ✅ | ✅ |
+| CPU 曲线、同步率、内存 | ✅ | ✅ | ✅ |
+| 磁盘占用 | ✅ | ✅ `fs.statfsSync` | ✅ |
+| 网络上下行 | ✅ `netstat -ibn` | ✅ `netstat -e` | ➖ 显示 `—` |
+| 负载 `loadavg` | ✅ | ➖ 恒为 0.00（系统没有此概念） | ✅ |
+| 内存精确度 | ✅ `vm_stat` 修正 | ✅ 直接用 `os.freemem()` | ✅ |
+| `install.sh` / `restore-profile.sh` | ✅ | ➖ 需 Git Bash 或 WSL | ✅ |
+
+Windows 上装插件用 pnpm 即可，两个 shell 脚本只是便利工具：
+
+```powershell
+cd $env:USERPROFILE\.dsh\profiles\desktop
+pnpm add link:$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui
+```
+
 ## 宿主路由
 
 三条只读本地路由，**没有任何第三方外联**：
