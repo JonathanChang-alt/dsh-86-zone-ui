@@ -137,6 +137,36 @@ if (sig !== lastSig) { /* 才重绘 */ }
 
 ---
 
+## Windows：BOM 会让整个 DSH 起不来
+
+**症状**：重启后弹窗 `DeepSeek Harness is unavailable`，
+`Unexpected token ' ', "﻿{ ... is not valid JSON`
+
+**根因**：Windows PowerShell 5.1 的 `Set-Content -Encoding UTF8`（以及老版记事本
+「另存为 UTF-8」）会写入 UTF-8 BOM（`EF BB BF`）。DSH 启动时 `readProfileManifest`
+用 Node 的 `JSON.parse` 读 profile 清单，而它**不接受 BOM** —— 于是宿主启动失败，
+整个应用打不开，不是插件被禁用。
+
+**为什么自查发现不了**：`.NET` 的 `ConvertFrom-Json` 容忍 BOM。
+
+```
+Set-Content -Encoding UTF8 后：EF BB BF 7B 0D 0A
+  ConvertFrom-Json : OK     ← 假阳性
+  JSON.parse       : FAIL   ← 宿主就是这一步
+```
+
+**做法**：
+- 不要用 PowerShell 写 `package.json`，用 `install.ps1`（内部走 Node 的
+  `fs.writeFileSync`，天然无 BOM）
+- 一定要手改时，写完用 Node 校验：
+  `node tests/manifest.mjs "$env:USERPROFILE\.dsh\profiles\desktop\package.json"`
+- 已经崩了：点弹窗第三个按钮
+  「Disable third-party plugins, back up profile patch, and restart」，
+  或删掉 `bundles` 里的插件名
+
+上游如果给 `readProfileManifest` 加一行 `text.replace(/^\uFEFF/, '')`，
+这个坑就能从「致命」降级为「无害」。已作为建议一并提交。
+
 ## 调试通道（已移除）
 
 排查阶段曾经用过一条临时通道：客户端把 DOM 现场 POST 到 `/86-ui/report`，

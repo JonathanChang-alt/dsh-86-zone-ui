@@ -86,21 +86,54 @@ pnpm add link:$HOME/Documents/plugins/dsh-86-zone-ui
 
 ### Windows（PowerShell）
 
+**推荐用脚本，不要手改 JSON** —— 手工改 `package.json` 在 Windows 上有一个致命陷阱，详见下面的警告。
+
 ```powershell
-# 1.
+# 1. clone
 git clone https://github.com/JonathanChang-alt/dsh-86-zone-ui.git `
   "$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui"
 
-# 2.
+# 2. 跑安装脚本（会自动 link + 写 bundles + 校验，全程无 BOM）
+cd "$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui"
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+
+# 3. 完全退出 DSH 再重开
+```
+
+如果你想手工做，第 2 步也可以拆成：
+
+```powershell
 cd "$env:USERPROFILE\.dsh\profiles\desktop"
 pnpm add link:"$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui"
-
-# 3. 用记事本打开下面这个文件，把 "dsh-86-zone-ui" 加到 bundles 数组末尾
-#    %USERPROFILE%\.dsh\profiles\desktop\package.json
 notepad "$env:USERPROFILE\.dsh\profiles\desktop\package.json"
-
-# 4. 退出 DSH 后重新打开
 ```
+
+> ### ⚠️ 手工改 `package.json` 会让整个 DSH 起不来
+>
+> **Windows PowerShell 5.1 的 `Set-Content -Encoding UTF8` 会写入 UTF-8 BOM（`EF BB BF`）。**
+> DSH 启动时用 Node 的 `JSON.parse` 读 profile 清单，它**不接受 BOM**：
+>
+> ```
+> JSON.parse('\uFEFF{"name":"..."}')  →  SyntaxError: Unexpected token '﻿'
+> ```
+>
+> 后果不是「皮肤不生效」，而是**整个应用无法启动**，弹窗报
+> `Unexpected token ' ', "﻿{ ... is not valid JSON`。
+>
+> 更坑的是：**用 PowerShell / .NET 自查会通过**，因为 `ConvertFrom-Json` 容忍 BOM。
+> 「我看过文件了，是合法 JSON」和「DSH 起不来」可以同时成立。
+>
+> 写完必须用 **Node** 校验（和宿主同一套解析）：
+>
+> ```powershell
+> node -e "const fs=require('fs');const b=fs.readFileSync(process.argv[1]);if(b[0]===0xEF&&b[1]===0xBB&&b[2]===0xBF)throw new Error('has BOM');JSON.parse(b.toString('utf8'));console.log('OK')" "$env:USERPROFILE\.dsh\profiles\desktop\package.json"
+> ```
+>
+> 仓库里也有现成的：`node tests/manifest.mjs <那个 package.json 的路径>`
+>
+> **已经崩了怎么救：** 崩溃弹窗里点第三个按钮
+> **「Disable third-party plugins, back up profile patch, and restart」**，
+> 或把 `bundles` 里的 `dsh-86-zone-ui` 删掉后重启。
 
 第 3 步改完应该长这样（**注意逗号**）：
 
@@ -187,6 +220,8 @@ assets/            背景图、默认头像、4 张可选头像
 docs/              README 用的截图（preview/ 是工作目录，不进仓库）
 scripts/           头像描线与主视觉合成脚本（PIL）
 tests/             205 项检查，见下
+install.sh         一键安装（macOS / Linux）
+install.ps1        一键安装（Windows，用 Node 写 JSON，天然无 BOM）
 PITFALLS.md        这个项目踩过的坑，动手前值得先读
 PROMPTS.md         生图提示词（头像 / 背景 / 主视觉）
 ```
@@ -199,6 +234,7 @@ node tests/contract.mjs    # 29  插件契约：槽位注册、主题令牌、�
 node tests/host.mjs        # 38  路由：鉴权、MIME、字节一致、?art= 回退
 node tests/audit.mjs       # 67  跨文件一致性：设置键、字段、类名、残留引用
 node tests/render.mjs      # 14  渲染冒烟：用桩 React 真跑每个槽位组件
+node tests/manifest.mjs    # 10  清单卫生：BOM、JSON.parse、bundles 内容
 ```
 
 `audit` 与 `render` 是为两类真实事故加的：
