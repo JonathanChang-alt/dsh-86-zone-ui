@@ -137,6 +137,50 @@ if (sig !== lastSig) { /* 才重绘 */ }
 
 ---
 
+## 11. 大块背景清扫只认 `rgb(4, 8, 15)`，换一台机器就整片失效
+
+第一版清扫用的是精确字符串比对：
+
+```js
+const BASE_FILL = 'rgb(4, 8, 15)';
+if (style.backgroundColor === BASE_FILL) { /* 清成 transparent */ }
+```
+
+在作者机器上对得上，在**另一台** 0.2.1-rc.2 上对不上。实测同一版本、同为
+`preference=dark`，中间对话列与侧栏的计算底色是：
+
+```
+rgb(7, 13, 22)   #070d16
+rgb(7, 13, 23)   #070d17    ← 正是 --dsw-specific-sidebar-fill: #050d17 的渲染值
+```
+
+差 3~8 个色阶，字符串比对整片落空 → 没有任何表面被清空 → `<img id="e86-backdrop">`
+**已经加载成功**（事件流明确写着「背景已加载 1920×1080」）**但一个像素都看不见**。
+
+**结论**：不要对底色做精确比对，按"近黑 + 不透明 + 面积大"判定：
+
+```js
+function isDarkOpaqueSurface(color) {
+  const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(color || '');
+  if (!m) return false;
+  const r = +m[1], g = +m[2], b = +m[3];
+  const a = m[4] === undefined ? 1 : parseFloat(m[4]);
+  if (a < 0.85) return false;                     // 已经半透明，不用管
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luma <= 40 && Math.max(r, g, b) <= 56;
+}
+```
+
+真正的护栏依旧是「面积 ≥ 30% 视口」+ `.e86-*` 排除 + 浮动层 `z-index >= 40` 豁免：
+侧栏占比不足 30%，卡片与对话框都在阈值以下，不会被误清。清空时把
+`background-image` 一并置 `none`，防止某些面板用渐变继续挡。
+
+**排查手法**（这次用的，比截图猜快得多）：截图后按比例采样空白点的像素值，
+拿到实际底色再和声明的令牌对比；`stddev < 3` 说明该区域是纯色填充（图没透出来），
+`> 8` 说明已经有图像/纹理。注意别采到文字，文字会把标准差拉高。
+
+---
+
 ## Windows：BOM 会让整个 DSH 起不来
 
 **症状**：重启后弹窗 `DeepSeek Harness is unavailable`，

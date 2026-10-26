@@ -312,8 +312,9 @@ window.__ModuleLoader__.load({
            conversation column itself got skipped and kept its opaque fill. */
         const floating = style.position === 'fixed' || style.position === 'absolute';
         if (floating && (parseInt(style.zIndex, 10) || 0) >= 40) continue;
-        if (style.backgroundColor === BASE_FILL) {
+        if (isDarkOpaqueSurface(style.backgroundColor)) {
           el.style.setProperty('background-color', 'transparent', 'important');
+          el.style.setProperty('background-image', 'none', 'important');
         }
         /* Every large surface is a candidate, cleared or not: the repair loop
            re-checks these, which catches a reused container that only turns
@@ -448,12 +449,32 @@ window.__ModuleLoader__.load({
     const clearedEls = [];
     const BASE_FILL = 'rgb(4, 8, 15)';
 
+    /* The shell does not paint every large surface with --dsw-alias-bg-base.
+       Measured on 0.2.1-rc.2 with preference=dark, the layout roots compute to
+       rgb(7, 13, 22) / rgb(7, 13, 23) — the sidebar-fill token, a hair lighter
+       than #04080f. An exact string compare against BASE_FILL therefore matches
+       nothing, no surface is cleared, and the backdrop stays hidden behind an
+       opaque column even though its <img> loaded fine.
+
+       Match any dark, opaque surface instead; the size threshold (>= 30% of the
+       viewport) plus the .e86-* exclusion below stay as the real guard, so cards,
+       dialogs and the rail are unaffected. */
+    function isDarkOpaqueSurface(color) {
+      const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(color || '');
+      if (!m) return false;
+      const r = +m[1], g = +m[2], b = +m[3];
+      const a = m[4] === undefined ? 1 : parseFloat(m[4]);
+      if (a < 0.85) return false;                       // already see-through
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      return luma <= 40 && Math.max(r, g, b) <= 56;     // near-black surface
+    }
+
     function considerClear(el) {
       if (!el || el.nodeType !== 1 || sweptEls.has(el)) return;
       if (el.closest && el.closest('.e86-decor, .e86-hud, .e86-rail, .e86-logo, .e86-ticker')) return;
       sweptEls.add(el);
       const style = window.getComputedStyle(el);
-      if (style.backgroundColor !== BASE_FILL) return;
+      if (!isDarkOpaqueSurface(style.backgroundColor)) return;
       const rect = el.getBoundingClientRect();
       if (rect.width * rect.height < window.innerWidth * window.innerHeight * 0.30) return;
       const floating = style.position === 'fixed' || style.position === 'absolute';
@@ -514,8 +535,9 @@ window.__ModuleLoader__.load({
         for (const el of clearedEls) {
           if (!el.isConnected) continue;
           const style = window.getComputedStyle(el);
-          if (style.backgroundColor === BASE_FILL) {
+          if (isDarkOpaqueSurface(style.backgroundColor)) {
             el.style.setProperty('background-color', 'transparent', 'important');
+            el.style.setProperty('background-image', 'none', 'important');
           }
         }
       }, 1400);
