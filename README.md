@@ -6,6 +6,9 @@
 
 ![总览](docs/overview.jpg)
 
+**快速开始：** `git clone` → `pnpm add link:` → 把 `dsh-86-zone-ui` 加进 `package.json` 的 `dsh.profile.bundles` → 重启。
+详见 [安装](#安装)，Windows 与 macOS 各有完整步骤。
+
 ## 功能
 
 ### 视觉
@@ -62,22 +65,82 @@ Hex 数据雨 · 空会话水印 · 顶栏标签战术化 · 底部状态条
 
 ## 安装
 
+四个步骤，macOS / Linux 与 Windows 各一份。**第 3 步是关键**，漏了不会生效。
+
+### macOS / Linux
+
 ```bash
-# 1. 放进插件目录
-git clone https://github.com/<you>/dsh-86-zone-ui.git \
+# 1. clone 到任意目录（不要放进 .dsh，升级时会被覆盖）
+git clone https://github.com/JonathanChang-alt/dsh-86-zone-ui.git \
   ~/Documents/plugins/dsh-86-zone-ui
 
-# 2. 链接进 DSH 的 profile（别用 cp，链接才能边改边看）
+# 2. 用 link: 装进 profile（别用 cp，link 才能改完即时看到）
 cd ~/.dsh/profiles/desktop
 pnpm add link:$HOME/Documents/plugins/dsh-86-zone-ui
 
-# 3. 把 dsh-86-zone-ui 加进 package.json 的 dsh.profile.bundles
-#    同一时间只能有一个主题插件，装它之前先移除别的主题
+# 3. 编辑该目录下的 package.json，把下面这行加到 dsh.profile.bundles 末尾
+#    "dsh-86-zone-ui"
 
-# 4. 重启 DeepSeek Harness
+# 4. 完全退出 DeepSeek Harness，再打开
 ```
 
-也可以在插件管理器里「添加本地插件」指向该目录。
+### Windows（PowerShell）
+
+```powershell
+# 1.
+git clone https://github.com/JonathanChang-alt/dsh-86-zone-ui.git `
+  "$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui"
+
+# 2.
+cd "$env:USERPROFILE\.dsh\profiles\desktop"
+pnpm add link:"$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui"
+
+# 3. 用记事本打开下面这个文件，把 "dsh-86-zone-ui" 加到 bundles 数组末尾
+#    %USERPROFILE%\.dsh\profiles\desktop\package.json
+notepad "$env:USERPROFILE\.dsh\profiles\desktop\package.json"
+
+# 4. 退出 DSH 后重新打开
+```
+
+第 3 步改完应该长这样（**注意逗号**）：
+
+```json
+"dsh": {
+  "profile": {
+    "bundles": [
+      "@deepseek-ai/dsh-base",
+      "@deepseek-ai/dsh-web-app",
+      "dsh-86-zone-ui"
+    ]
+  }
+}
+```
+
+### 也可以在插件管理器里装
+
+DSH 的插件管理器有「添加本地插件」，指向 clone 下来的目录即可，它等价于第 1、2 步。
+但装完之后**仍然要确认第 3 步**——插件管理器有时会把 `bundles` 重写成它自己的清单。
+
+### 装完自检
+
+重启后依次确认：
+
+| 检查点 | 正常 | 不正常怎么办 |
+|---|---|---|
+| 右上角蕾娜头像 | 出现 | 见下方排查 |
+| 设置页有「第 86 区」一栏 | 有 | 说明插件没被加载，`bundles` 写错了 |
+| 左下角有「战术状态」按钮 | 有 | 同上 |
+| 状态台里 CPU 有数字 | 有 | 宿主路由没起，检查是否完整重启（不是刷新） |
+
+### 排查
+
+| 现象 | 原因 |
+|---|---|
+| 设置页没有「第 86 区」 | `package.json` 的 `bundles` 里没加，或 JSON 语法错（多/少逗号） |
+| 有设置页但没有头像 | `assets/avatar.png` 没被读到，确认 clone 完整 |
+| 整个界面变黑或没反应 | 同时装了两个主题插件，先移除另一个 |
+| 头像变成占位图形 | `/86-ui/avatar` 返回 404，检查 `assets/` 目录是否存在 |
+| 指标全是 `—` | 宿主没重启（`index.js` 改动必须重启，刷新不够） |
 
 > 只有宿主文件（`index.js`）改动需要重启；客户端（`client.js`）刷新界面即可。
 
