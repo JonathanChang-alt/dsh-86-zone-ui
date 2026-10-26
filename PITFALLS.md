@@ -211,6 +211,44 @@ Set-Content -Encoding UTF8 后：EF BB BF 7B 0D 0A
 上游如果给 `readProfileManifest` 加一行 `text.replace(/^\uFEFF/, '')`，
 这个坑就能从「致命」降级为「无害」。已作为建议一并提交。
 
+---
+
+## 12. `.ps1` 脚本必须**纯 ASCII**，否则 PowerShell 5.1 解析失败
+
+同一个编码坑还有另一半：**`.ps1` 文件**。
+
+Windows PowerShell 5.1 读取 `.ps1` 时，**没有 BOM 就按 ANSI（本地代码页）解码**。
+所以一条中文注释、一句中文 `Write-Host`，都会被当成乱码字节，进而吃掉引号与括号，
+报出完全指错方向的错误：
+
+```
+At install.ps1:58 char:30
++     if ($LASTEXITCODE -ne 0) { throw "pnpm add 澶辫触锛坋xit=$LASTEXITCODE..."
+Missing closing '}' in statement block.
+The string is missing the terminator: '.
+```
+
+**结论**：仓库里的 `install.ps1` 保持**纯 ASCII**（英文提示），任何编辑器、
+任何 PowerShell 版本都不会踩雷；中文说明放在 README / PITFALLS 里。
+
+真要写中文的 `.ps1`，必须存成 **UTF-8 with BOM** —— 注意这跟 `package.json` 正好相反：
+
+| 文件 | 正确编码 |
+|---|---|
+| `package.json`（被 Node `JSON.parse` 读） | **UTF-8 无 BOM** |
+| `*.ps1`（被 PowerShell 5.1 读） | **UTF-8 带 BOM**，或纯 ASCII |
+
+`install.ps1` 里另外两个实测踩到的小坑：
+
+- **`$PSScriptRoot` 在 `param()` 默认值里不可靠**（PS 5.1 下为空）。
+  应在脚本主体里解析：
+  `if (-not $PluginDir) { $PluginDir = Split-Path -Parent $MyInvocation.MyCommand.Path }`
+- **不要用 `node -e "<一大段 JS>"`**：JS 里的 `||`、`{}`、引号会被 PowerShell
+  当成自己的语法解析。把 JS 写成临时 `.cjs` 文件再用 `& $Node $jsPath ...` 执行，
+  稳定得多。
+
+---
+
 ## 调试通道（已移除）
 
 排查阶段曾经用过一条临时通道：客户端把 DOM 现场 POST 到 `/86-ui/report`，
