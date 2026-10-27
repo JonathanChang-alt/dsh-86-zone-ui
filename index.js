@@ -24,6 +24,8 @@ const BASE = "/86-ui";
 const METRICS_PATH = `${BASE}/metrics`;
 const AVATAR_PATH = `${BASE}/avatar`;
 const BACKGROUND_PATH = `${BASE}/background`;
+const BLUEPRINT_TOP_PATH = `${BASE}/blueprint/top`;
+const BLUEPRINT_BOTTOM_PATH = `${BASE}/blueprint/bottom`;
 
 const ASSET_DIR = fileURLToPath(new URL("./assets/", import.meta.url));
 
@@ -51,6 +53,9 @@ const SCENES = {
     ["background-flowers.png", "image/png"],
   ],
 };
+
+const BLUEPRINT_TOP_CANDIDATES = [["blueprint-top.png", "image/png"]];
+const BLUEPRINT_BOTTOM_CANDIDATES = [["blueprint-bottom.png", "image/png"]];
 
 const BACKGROUND_CANDIDATES = [
   ["background.jpg", "image/jpeg"],
@@ -406,19 +411,23 @@ function apply(ctx) {
 
   const avatarRoute = registerAssetRoute(AVATAR_PATH, AVATAR_CANDIDATES, "avatar");
   const backgroundRoute = registerAssetRoute(BACKGROUND_PATH, BACKGROUND_CANDIDATES, "background");
+  const blueprintTopRoute = registerAssetRoute(BLUEPRINT_TOP_PATH, BLUEPRINT_TOP_CANDIDATES, "blueprint top");
+  const blueprintBottomRoute = registerAssetRoute(BLUEPRINT_BOTTOM_PATH, BLUEPRINT_BOTTOM_CANDIDATES, "blueprint bottom");
 
   const dispose = () => {
     try { clearInterval(timer); } catch {}
     try { if (typeof metricsRoute === "function") metricsRoute(); } catch {}
     try { if (typeof avatarRoute === "function") avatarRoute(); } catch {}
     try { if (typeof backgroundRoute === "function") backgroundRoute(); } catch {}
+    try { if (typeof blueprintTopRoute === "function") blueprintTopRoute(); } catch {}
+    try { if (typeof blueprintBottomRoute === "function") blueprintBottomRoute(); } catch {}
   };
 
   readNetwork().then((value) => { networkCache = value || networkCache; }).catch(() => {});
   refreshDarwinMemory().catch(() => {});
   if (typeof ctx?.effect === "function") ctx.effect(() => dispose, `${NS}: routes`);
   try {
-    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}`);
+    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}, ${BLUEPRINT_TOP_PATH}, ${BLUEPRINT_BOTTOM_PATH}`);
   } catch {}
 
   return dispose;

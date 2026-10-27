@@ -1677,6 +1677,73 @@ window.__ModuleLoader__.load({
         color: #cfe8fa;
         font-variant-numeric: tabular-nums;
       }
+      .e86-page {
+        background: #e9edf1;
+        color: #131a24;
+        padding: 9px 10px 10px;
+        border: 1px solid rgba(63, 182, 255, 0.20);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+      }
+      .e86-page__plate { margin: 0; }
+      .e86-page__plate img { display: block; width: 100%; height: auto; }
+      .e86-page__head {
+        margin: 7px 0 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid rgba(19, 26, 36, 0.55);
+      }
+      .e86-page__kicker {
+        display: block;
+        font: 7.5px/1.3 var(--e86-cjk);
+        letter-spacing: 0.16em;
+        color: #4a5766;
+      }
+      .e86-page h3 {
+        margin: 3px 0 0;
+        font: 600 15px/1.2 var(--e86-cjk);
+        letter-spacing: 0.10em;
+        color: #0f1720;
+        border-left: 3px solid #0f1720;
+        padding-left: 7px;
+      }
+      .e86-page__spec-tag {
+        display: inline-block;
+        margin-top: 6px;
+        font: 7px/1 var(--e86-mono);
+        letter-spacing: 0.22em;
+        color: #2a3543;
+      }
+      .e86-page__spec {
+        margin: 0 0 8px;
+        display: grid;
+        gap: 3px;
+      }
+      .e86-page__spec > div {
+        display: grid;
+        grid-template-columns: 46px 1fr;
+        gap: 6px;
+        align-items: baseline;
+      }
+      .e86-page__spec dt {
+        font: 7.5px/1.5 var(--e86-cjk);
+        letter-spacing: 0.10em;
+        color: #4a5766;
+      }
+      .e86-page__spec dd {
+        margin: 0;
+        font: 8px/1.55 var(--e86-cjk);
+        letter-spacing: 0.02em;
+        color: #131a24;
+      }
+      .e86-page__plate--sketch {
+        border-top: 1px solid rgba(19, 26, 36, 0.35);
+        padding-top: 6px;
+      }
+      .e86-page__plate--sketch figcaption {
+        margin-top: 4px;
+        font: 7px/1 var(--e86-mono);
+        letter-spacing: 0.16em;
+        color: #4a5766;
+      }
       .e86-net {
         display: flex;
         justify-content: space-between;
@@ -2286,6 +2353,42 @@ window.__ModuleLoader__.load({
           'aria-pressed': props.value === option.value ? 'true' : 'false',
           onClick: () => props.onChange(option.value),
         }, option.label))
+      );
+    }
+
+    /* A page from the setting book, not a widget: the sheet keeps its own paper
+       colour, rules and caption, so it reads as something laid on top of the
+       dark panel rather than another row of dark UI. */
+    function BlueprintPage() {
+      const spec = [
+        ['制造商', '共和国工厂 RMI'],
+        ['全长', '10.7 m'],
+        ['全高', '2.1 m（不含炮架武装）'],
+        ['固定武装', '高周波刀 ×2 · 12.7mm 重机枪 ×2'],
+        ['', '锚索钩爪 ×2 · 背部 57mm 滑膛炮 ×1'],
+        ['备注', '无人 — 最低限度装甲，未设逃生装置'],
+      ];
+      return h(RailSection, { id: 'bp', label: '机体档案', right: h('u', null, 'I-IV') },
+        h('article', { className: 'e86-page' },
+          h('figure', { className: 'e86-page__plate' },
+            h('img', { src: '/86-ui/blueprint/top', alt: 'M1A4 破坏神 三视图', draggable: false })
+          ),
+          h('header', { className: 'e86-page__head' },
+            h('span', { className: 'e86-page__kicker' }, '圣玛格诺利亚共和国制「无人机」'),
+            h('h3', null, 'M1A4 破坏神'),
+            h('span', { className: 'e86-page__spec-tag' }, 'SPEC')
+          ),
+          h('dl', { className: 'e86-page__spec' },
+            spec.map(([key, value], index) => h('div', { key: index },
+              h('dt', null, key),
+              h('dd', null, value)
+            ))
+          ),
+          h('figure', { className: 'e86-page__plate e86-page__plate--sketch' },
+            h('img', { src: '/86-ui/blueprint/bottom', alt: 'M1A4 动作示意', draggable: false }),
+            h('figcaption', null, 'FIG. 2 — 战场姿态')
+          )
+        )
       );
     }
 
@@ -2967,6 +3070,7 @@ window.__ModuleLoader__.load({
             h(SystemMonitor, { data: metrics }),
             h(LinkWave, { data: metrics }),
             h(EventLog),
+            h(BlueprintPage),
             h('div', { className: 'e86-rail__section' }, h(CommsStub))
           ),
           h('div', { className: 'e86-rail__foot' },
