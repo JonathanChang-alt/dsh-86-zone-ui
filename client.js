@@ -442,6 +442,31 @@ window.__ModuleLoader__.load({
           groupCount += 1;
         }
       }
+      /* Which row is the current one? The shell paints it with a background the
+         others do not have, and it exposes no aria-current to read. Comparing
+         backgrounds across the group is a heuristic, so the result is reported
+         in the event stream rather than silently assumed. */
+      const rows = Array.prototype.slice.call(side.querySelectorAll('[data-e86-nav="1"]'));
+      const tones = rows.map((row) => window.getComputedStyle(row).backgroundColor);
+      const tally = {};
+      tones.forEach((tone) => { tally[tone] = (tally[tone] || 0) + 1; });
+      const mode = Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0];
+      let currentLabel = '';
+      rows.forEach((row, index) => {
+        const tone = tones[index];
+        const lit = tone !== mode && tone !== 'rgba(0, 0, 0, 0)' && tone !== 'transparent';
+        if (lit) {
+          row.setAttribute('data-e86-current', '1');
+          currentLabel = (row.textContent || '').trim();
+        } else {
+          row.removeAttribute('data-e86-current');
+        }
+      });
+      if (currentLabel && currentLabel !== lastCurrentLabel) {
+        lastCurrentLabel = currentLabel;
+        emitEvent('info', '菜单活动项：' + currentLabel);
+      }
+
       if ((navCount || groupCount) && (navCount + groupCount) !== lastSideCount) {
         lastSideCount = navCount + groupCount;
         emitEvent('info', '侧栏已识别 ' + navCount + ' 项导航 / ' + groupCount + ' 个分组');
@@ -449,6 +474,7 @@ window.__ModuleLoader__.load({
     }
 
     let lastSideCount = 0;
+    let lastCurrentLabel = '';
 
     /* Switching conversations replaces the subtree *inside* #root. The body
        watcher never sees that, so the freshly mounted column kept its opaque
@@ -915,21 +941,29 @@ window.__ModuleLoader__.load({
         color: rgba(63, 182, 255, 0.45);
         transition: color 0.16s;
       }
-      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"]::after {
+      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"] {
+        transition: color 0.16s, box-shadow 0.18s;
+      }
+      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"]:hover {
+        color: #e8f6ff !important;
+        box-shadow: inset 2px 0 0 rgba(89, 224, 255, 0.85);
+      }
+      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"]:hover::before { color: #59e0ff; }
+      /* 彼岸花：整个界面里唯一的红，只长在当前项上 */
+      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"][data-e86-current="1"]::after {
         content: "";
         position: absolute;
-        left: 0;
+        right: 6px;
         top: 50%;
-        width: 2px;
-        height: 0;
+        width: 13px;
+        height: 13px;
         transform: translateY(-50%);
-        background: var(--e86-glow);
-        box-shadow: 0 0 8px rgba(89, 224, 255, 0.7);
-        transition: height 0.18s ease-out;
+        background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23e2413f' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M8 8.4C6.5 6.1 6.9 3.2 8 1.6'/%3E%3Cpath d='M8 8.4C9.5 6.1 9.1 3.2 8 1.6'/%3E%3Cpath d='M8 8.4C10.4 7.5 12.8 8.6 13.5 10.3'/%3E%3Cpath d='M8 8.4C8.5 10.4 7.9 12.4 6.4 13.7'/%3E%3Cpath d='M8 8.4C5.6 7.5 3.2 8.6 2.5 10.3'/%3E%3Cpath d='M8 8.4C5.7 9.9 4.7 11.8 4.9 13.4'/%3E%3Cpath d='M8 8.4C10.3 9.9 11.3 11.8 11.1 13.4'/%3E%3C/svg%3E") center / contain no-repeat;
+        filter: drop-shadow(0 0 5px rgba(226, 65, 63, 0.75));
       }
-      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"]:hover { color: #e8f6ff !important; }
-      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"]:hover::before { color: #59e0ff; }
-      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"]:hover::after { height: 58%; }
+      html[data-e86="on"] [data-e86-side="1"] [data-e86-nav="1"][data-e86-current="1"]::before {
+        color: rgba(226, 65, 63, 0.75);
+      }
 
       html[data-e86="on"] [data-e86-side="1"] [data-e86-group="1"] {
         display: flex;
