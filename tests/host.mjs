@@ -55,10 +55,11 @@ const ctx = {
 };
 
 const dispose = apply(ctx);
-check('routes registered', routes.size === 3, [...routes.keys()].join(', '));
+check('routes registered', routes.size === 4, [...routes.keys()].join(', '));
 check('metrics route', routes.has('/86-ui/metrics'));
 check('avatar route', routes.has('/86-ui/avatar'));
 check('background route', routes.has('/86-ui/background'));
+check('blueprint route', routes.has('/86-ui/blueprint'));
 check('dispose returned', typeof dispose === 'function');
 
 /* ------------------------------------------------------------ fake exchage */
