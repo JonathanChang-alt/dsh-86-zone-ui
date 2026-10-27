@@ -1677,6 +1677,48 @@ window.__ModuleLoader__.load({
         color: #cfe8fa;
         font-variant-numeric: tabular-nums;
       }
+      .e86-bp { margin: 0; }
+      .e86-bp img {
+        width: 100%;
+        display: block;
+        border: 1px solid rgba(63, 182, 255, 0.22);
+        box-shadow: 0 0 0 1px rgba(4, 8, 15, 0.5) inset, 0 6px 18px rgba(0, 0, 0, 0.35);
+        filter: saturate(0.82) brightness(0.90);
+      }
+      .e86-bp figcaption {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 1px 0;
+        font: 8px/1.2 var(--e86-mono);
+        letter-spacing: 0.1em;
+        color: #7f9fb8;
+      }
+      .e86-bp figcaption b { color: #cfe8fa; font-weight: 500; letter-spacing: 0.14em; }
+      .e86-bp figcaption span { font-family: var(--e86-mono); }
+      .e86-bp__spec {
+        margin: 8px 0 0;
+        display: grid;
+        gap: 4px;
+      }
+      .e86-bp__spec > div {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+        gap: 8px;
+        align-items: baseline;
+      }
+      .e86-bp__spec dt {
+        font: 8px/1.3 var(--e86-cjk);
+        letter-spacing: 0.16em;
+        color: #5f89a8;
+      }
+      .e86-bp__spec dd {
+        margin: 0;
+        font-size: 9px;
+        line-height: 1.45;
+        letter-spacing: 0.02em;
+        color: #a8c6da;
+      }
       .e86-net {
         display: flex;
         justify-content: space-between;
@@ -2286,6 +2328,36 @@ window.__ModuleLoader__.load({
           'aria-pressed': props.value === option.value ? 'true' : 'false',
           onClick: () => props.onChange(option.value),
         }, option.label))
+      );
+    }
+
+    /* The blueprint lives as a document, not a wash: at 250px the photographed
+       line work reads as a scanned spec sheet instead of screen dirt. */
+    function BlueprintCard() {
+      const rows = [
+        ['武装', '高周波刀 ×2 · 12.7mm 重机枪 ×2'],
+        ['附加', '锚索钩爪 ×2 · 57mm 滑膛炮'],
+        ['乘员', '无人 · 86 专用'],
+      ];
+      return h(RailSection, { id: 'bp', label: '机体档案', right: h('u', null, 'M1A4') },
+        h('figure', { className: 'e86-bp' },
+          h('img', {
+            src: '/86-ui/blueprint',
+            alt: 'M1A4 破坏神 三视图',
+            draggable: false,
+            loading: 'lazy',
+          }),
+          h('figcaption', null,
+            h('b', null, '「破坏神」'),
+            h('span', null, '全高 2.1m / 全长 10.7m')
+          )
+        ),
+        h('dl', { className: 'e86-bp__spec' },
+          rows.map(([key, value]) => h('div', { key },
+            h('dt', null, key),
+            h('dd', null, value)
+          ))
+        )
       );
     }
 
@@ -2967,6 +3039,7 @@ window.__ModuleLoader__.load({
             h(SystemMonitor, { data: metrics }),
             h(LinkWave, { data: metrics }),
             h(EventLog),
+            h(BlueprintCard),
             h('div', { className: 'e86-rail__section' }, h(CommsStub))
           ),
           h('div', { className: 'e86-rail__foot' },
