@@ -20,7 +20,6 @@
 | 左上 86 锁标 | 大号 86 + 片假名 + `[EIGHTY SIX]` 框，四层动效：扫描光带 6.5s、数字色散抖动 5.7s、片假名解码闪烁 4.3s、方框脉冲 3.9s —— 四个周期互质，永不整齐划一 |
 | 右上 HUD 头像 | 线稿头像 + 四角框 + `VLADILENA MILIZÉ / HANDLER 01` 铭牌 + Para-RAID 指示灯；**5 张头像可切换**，状态台展开时放大居中变成该列页眉 |
 | 装饰层 | 扫描线 / 技术网格 / 暗角 / 竖向扫光带，全部 `pointer-events: none` |
-| 机体档案 | 状态台里的一块可折叠卡片：M1A4「破坏神」三视图（书页照片经平场校正 + 二值化提取），配全高/全长与武装清单。素材以"扫描件"的形态呈现 —— 在这个尺寸下照片的颗粒是加分项 |
 | Hex 数据雨 | 全窗口 canvas，约 11fps，径向遮罩让中心留空，窗口不可见时 `cancelAnimationFrame` |
 | 空会话水印 | 86 描边字压在空会话主视觉后面，注册在 `conversation.hero.brand.mark` 槽位，有对话时自动消失 |
 | 底部状态条 | 24px 滚动条，内容是真实 CPU / 内存 / 磁盘 / 负载 / uptime |
@@ -207,7 +206,6 @@ pnpm add link:$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui
 | `GET /86-ui/metrics` | CPU / 内存 / 磁盘 / 负载 / 网络吞吐 / RSS / uptime |
 | `GET /86-ui/avatar?art=NN` | 头像；`NN` ∈ `01..04` 时取 `assets/portraits/NN.png`，其余回退 `assets/avatar.png` |
 | `GET /86-ui/background` | 背景图；`?scene=rail\|flowers` 选择画面，未知值回退默认 |
-| `GET /86-ui/blueprint` | 机体三视图（状态台卡片用） |
 
 都先过 `connection.requestRejection(req)` 鉴权闸门。
 
@@ -222,7 +220,6 @@ index.js           宿主侧路由与采样（约 12 KB）
 assets/            背景图、默认头像、4 张可选头像
 docs/              README 用的截图（preview/ 是工作目录，不进仓库）
 assets/background-flowers.jpg   花海场景
-assets/blueprint.png            机体三视图（纸面版，卡片用）
 scripts/           头像描线与主视觉合成脚本（PIL）
 tests/             205 项检查，见下
 install.sh         一键安装（macOS / Linux）
