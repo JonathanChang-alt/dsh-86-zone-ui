@@ -26,6 +26,7 @@ const AVATAR_PATH = `${BASE}/avatar`;
 const BACKGROUND_PATH = `${BASE}/background`;
 const BLUEPRINT_TOP_PATH = `${BASE}/blueprint/top`;
 const BLUEPRINT_BOTTOM_PATH = `${BASE}/blueprint/bottom`;
+const LYCORIS_PATH = `${BASE}/lycoris`;
 
 const ASSET_DIR = fileURLToPath(new URL("./assets/", import.meta.url));
 
@@ -54,6 +55,7 @@ const SCENES = {
   ],
 };
 
+const LYCORIS_CANDIDATES = [["lycoris.png", "image/png"]];
 const BLUEPRINT_TOP_CANDIDATES = [["blueprint-top.png", "image/png"]];
 const BLUEPRINT_BOTTOM_CANDIDATES = [["blueprint-bottom.png", "image/png"]];
 
@@ -413,6 +415,7 @@ function apply(ctx) {
   const backgroundRoute = registerAssetRoute(BACKGROUND_PATH, BACKGROUND_CANDIDATES, "background");
   const blueprintTopRoute = registerAssetRoute(BLUEPRINT_TOP_PATH, BLUEPRINT_TOP_CANDIDATES, "blueprint top");
   const blueprintBottomRoute = registerAssetRoute(BLUEPRINT_BOTTOM_PATH, BLUEPRINT_BOTTOM_CANDIDATES, "blueprint bottom");
+  const lycorisRoute = registerAssetRoute(LYCORIS_PATH, LYCORIS_CANDIDATES, "lycoris");
 
   const dispose = () => {
     try { clearInterval(timer); } catch {}
@@ -421,13 +424,14 @@ function apply(ctx) {
     try { if (typeof backgroundRoute === "function") backgroundRoute(); } catch {}
     try { if (typeof blueprintTopRoute === "function") blueprintTopRoute(); } catch {}
     try { if (typeof blueprintBottomRoute === "function") blueprintBottomRoute(); } catch {}
+    try { if (typeof lycorisRoute === "function") lycorisRoute(); } catch {}
   };
 
   readNetwork().then((value) => { networkCache = value || networkCache; }).catch(() => {});
   refreshDarwinMemory().catch(() => {});
   if (typeof ctx?.effect === "function") ctx.effect(() => dispose, `${NS}: routes`);
   try {
-    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}, ${BLUEPRINT_TOP_PATH}, ${BLUEPRINT_BOTTOM_PATH}`);
+    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}, ${BLUEPRINT_TOP_PATH}, ${BLUEPRINT_BOTTOM_PATH}, ${LYCORIS_PATH}`);
   } catch {}
 
   return dispose;

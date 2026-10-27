@@ -136,6 +136,7 @@ window.__ModuleLoader__.load({
       heroMark: true,
       ticker: true,
       tabStyle: true,
+      heroFlower: true,
       avatarMode: 'id',
       avatarArt: '00',
       railDefault: false,
@@ -537,6 +538,7 @@ window.__ModuleLoader__.load({
             if (!document.getElementById('e86-backdrop')) applyBackdrop();
             markTabs();
             markSidebar();
+            updateEmptyState();
           } catch (e) { /* mid-render */ }
         }, 180);
       });
@@ -600,6 +602,7 @@ window.__ModuleLoader__.load({
           startRepairLoop();
           try { markTabs(); } catch (e) { /* tabs not mounted yet */ }
           try { markSidebar(); } catch (e) { /* sidebar not mounted yet */ }
+          try { updateEmptyState(); } catch (e) { /* transcript not mounted yet */ }
         } else {
           root.style.removeProperty('background-color');
           root.style.removeProperty('background-image');
@@ -1039,6 +1042,37 @@ window.__ModuleLoader__.load({
         border-radius: 2px;
         padding: 0.08em 0.34em;
         color: #a8dcff !important;
+      }
+    `;
+
+    const FLOWER_CSS = `
+      .e86-flower {
+        position: fixed;
+        right: -58px;
+        bottom: -46px;
+        width: 230px;
+        height: auto;
+        z-index: 1330;
+        pointer-events: none;
+        user-select: none;
+        opacity: 0;
+        transform: rotate(8deg) scale(0.94);
+        transform-origin: right bottom;
+        filter: drop-shadow(0 0 30px rgba(226, 65, 63, 0.5));
+        transition: opacity 0.9s ease, transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      html[data-e86-empty="1"] .e86-flower {
+        opacity: 0.62;
+        transform: rotate(8deg) scale(1);
+      }
+      /* 状态台展开时让位，花贴着内容区的右缘 */
+      html[data-e86-rail-open="on"] .e86-flower { right: 246px; }
+      @media (max-width: 1100px) {
+        .e86-flower { width: 170px; right: -44px; bottom: -34px; }
+        html[data-e86-rail-open="on"] .e86-flower { right: 210px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .e86-flower { transition: opacity 0.2s; transform: rotate(8deg) scale(1); }
       }
     `;
 
@@ -2426,6 +2460,45 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /* One bloom, only while the session is empty: the one moment the interface
+       can afford to spend space on something that is not information. */
+    function HeroFlower() {
+      const on = useSetting('heroFlower')[0];
+      if (!on) return null;
+      return h(React.Fragment, null,
+        h(StyleTag, { css: FLOWER_CSS }),
+        h('img', {
+          className: 'e86-flower',
+          src: '/86-ui/lycoris',
+          alt: '',
+          'aria-hidden': true,
+          draggable: false,
+          loading: 'lazy',
+        })
+      );
+    }
+
+    /* Empty means: no rendered message in the transcript. That is the one
+       stable hook the shell exposes, and the reading is reported so a wrong
+       guess shows up in the event stream instead of silently misfiring. */
+    let lastEmpty = null;
+
+    function updateEmptyState() {
+      const nodes = document.querySelectorAll('[class*="markdown"]');
+      let rendered = 0;
+      for (let i = 0; i < nodes.length; i += 1) {
+        if ((nodes[i].textContent || '').trim().length > 0) rendered += 1;
+      }
+      const empty = rendered === 0;
+      const root = document.documentElement;
+      if (empty) root.setAttribute('data-e86-empty', '1');
+      else root.removeAttribute('data-e86-empty');
+      if (lastEmpty !== empty) {
+        lastEmpty = empty;
+        emitEvent('info', empty ? '空会话 · 彼岸花已开' : '有会话 · 彼岸花收起');
+      }
+    }
+
     /* ---------------------------------------------------------------- decor */
 
     function Decor() {
@@ -2438,6 +2511,7 @@ window.__ModuleLoader__.load({
         h(StyleTag, { css: SURFACE_CSS }),
         h(StyleTag, { css: ACCOUNT_CSS }),
         h(StyleTag, { css: DECOR_CSS }),
+        h(HeroFlower),
         h('div', { className: 'e86-decor', 'aria-hidden': true },
           h('div', { className: 'e86-decor__grid' }),
           h('div', { className: 'e86-decor__scan' }),
@@ -3229,6 +3303,7 @@ window.__ModuleLoader__.load({
       const [heroMark, setHeroMark] = useSetting('heroMark');
       const [ticker, setTicker] = useSetting('ticker');
       const [tabStyle, setTabStyle] = useSetting('tabStyle');
+      const [heroFlower, setHeroFlower] = useSetting('heroFlower');
       const [bgStrength, setBgStrength] = useSetting('bgStrength');
       const [bgScene, setBgScene] = useSetting('bgScene');
       const [logo, setLogo] = useSetting('logo');
@@ -3326,6 +3401,9 @@ window.__ModuleLoader__.load({
         ),
         h(Row, { label: '空会话 86 水印' },
           h(Switch, { value: heroMark, onChange: setHeroMark, label: '空会话 86 水印' })
+        ),
+        h(Row, { label: '空会话彼岸花', hint: '只在没有对话时从右下角探出' },
+          h(Switch, { value: heroFlower, onChange: setHeroFlower, label: '空会话彼岸花' })
         ),
         h(Row, { label: '顶栏标签战术化', hint: '给 对话 / 上下文 / 编队 加编号与批示线' },
           h(Switch, { value: tabStyle, onChange: setTabStyle, label: '顶栏标签战术化' })

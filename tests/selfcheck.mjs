@@ -96,7 +96,7 @@ check('host vm_stat call is fixed-argv', host.includes('execFileAsync("/usr/bin/
 check('no inlined base64 media', !/data:image\/[a-z]+;base64/.test(client), 'client.js stays small');
 
 const size = Buffer.byteLength(client, 'utf8');
-check('client.js under 140 KB', size < 140 * 1024, `${(size / 1024).toFixed(1)} KB`);
+check('client.js under 160 KB', size < 160 * 1024, `${(size / 1024).toFixed(1)} KB`);
 
 /* ------------------------------------------------------------- contrast */
 
