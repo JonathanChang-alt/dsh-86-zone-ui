@@ -21,7 +21,7 @@
 | 右上 HUD 头像 | 线稿头像 + 四角框 + `VLADILENA MILIZÉ / HANDLER 01` 铭牌 + Para-RAID 指示灯；**5 张头像可切换**，状态台展开时放大居中变成该列页眉 |
 | 装饰层 | 扫描线 / 技术网格 / 暗角 / 竖向扫光带，全部 `pointer-events: none` |
 | 空会话彼岸花 | 没有任何对话时，一朵彼岸花从内容区右下角"开在屏幕外"，62% 不透明、缓慢绽开；一旦有消息就淡出。判定依据是 `[class*="markdown"]` 里有没有非空文本 —— 壳层唯一稳定的钩子，判定结果写进事件流 |
-| COMMS 音乐 | 状态台里的播放器：三首 SawanoHiroyuki[nZk] 曲目（AVID / Voice of the Chord / Hands Up to the Sky），支持点选、播放/暂停、拖动进度、音量。音频文件**不入库**，由你放进 `assets/music/`；缺失时显示 `音源未接入` 并给出期望路径 |
+| COMMS 音乐 | 状态台里的播放器：四首曲目（AVID / Voices of the Chord / LilaS / Hands Up to the Sky），支持点选、播放/暂停、拖动进度、音量。音频文件**不入库**，由你放进 `assets/music/`；缺失时显示 `音源未接入` 并给出期望路径 |
 | 机体档案 | 状态台里的一页「设定集」：M1A4「破坏神」三视图 + 规格表 + 战场姿态草图。纸面留在浅色，像一页真的图纸压在暗色面板上；可整块折叠 |
 | Hex 数据雨 | 全窗口 canvas，约 11fps，径向遮罩让中心留空，窗口不可见时 `cancelAnimationFrame` |
 | 空会话水印 | 86 描边字压在空会话主视觉后面，注册在 `conversation.hero.brand.mark` 槽位，有对话时自动消失 |

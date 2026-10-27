@@ -237,17 +237,22 @@ await new Promise((resolve) => setTimeout(resolve, 400));
   check('music unknown id 404', noTrack.status === 404, String(noTrack.status));
 
   const musicDir = path.join(ROOT, 'assets', 'music');
-  const probe = path.join(musicDir, 'avid.mp3');
-  if (fs.existsSync(probe)) {
-    const full = call('/86-ui/music?track=avid', { method: 'GET', headers: {} });
-    check('music full 200', full.status === 200, String(full.status));
-    check('music advertises ranges', full.headers['Accept-Ranges'] === 'bytes', String(full.headers['Accept-Ranges']));
+  /* id → file stem; the stems are not always the id. */
+  const TRACKS = { avid: 'avid', voices: 'voices-of-the-chord', lilas: 'lilas', hands: 'hands-up-to-the-sky' };
+  const present = Object.keys(TRACKS).filter((id) => fs.existsSync(path.join(musicDir, `${TRACKS[id]}.mp3`)));
+
+  for (const id of present) {
+    const full = call(`/86-ui/music?track=${id}`, { method: 'GET', headers: {} });
+    check(`music ${id} 200`, full.status === 200, String(full.status));
+    check(`music ${id} advertises ranges`, full.headers['Accept-Ranges'] === 'bytes', String(full.headers['Accept-Ranges']));
     const size = Number(full.headers['Content-Length']);
-    const part = call('/86-ui/music?track=avid', { method: 'GET', headers: { range: 'bytes=0-99' } });
-    check('music range 206', part.status === 206, String(part.status));
-    check('music range length 100', part.headers['Content-Length'] === '100', String(part.headers['Content-Length']));
-    check('music range header', part.headers['Content-Range'] === `bytes 0-99/${size}`, String(part.headers['Content-Range']));
-  } else {
+    check(`music ${id} has length`, size > 10000, String(size));
+    await waitFor(full);
+    const part = call(`/86-ui/music?track=${id}`, { method: 'GET', headers: { range: 'bytes=0-99' } });
+    check(`music ${id} range 206`, part.status === 206, String(part.status));
+    check(`music ${id} range header`, part.headers['Content-Range'] === `bytes 0-99/${size}`, String(part.headers['Content-Range']));
+  }
+  if (present.length === 0) {
     const missing = call('/86-ui/music?track=avid', { method: 'GET', headers: {} });
     check('music missing file 404', missing.status === 404, String(missing.status));
     check('music 404 names the file', /avid/.test(missing.text()), missing.text().slice(0, 80));

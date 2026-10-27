@@ -95,9 +95,10 @@ window.__ModuleLoader__.load({
        files are copyrighted, so nothing ships — the host serves whatever sits
        in assets/music/, and a missing file degrades to a plain notice. */
     const TRACKS = [
-      { id: 'avid', title: 'AVID', meta: 'SawanoHiroyuki[nZk]', file: 'assets/music/avid.mp3' },
-      { id: 'voice', title: 'Voice of the Chord', meta: 'SawanoHiroyuki[nZk]', file: 'assets/music/voice-of-the-chord.mp3' },
-      { id: 'hands', title: 'Hands Up to the Sky', meta: 'SawanoHiroyuki[nZk]', file: 'assets/music/hands-up-to-the-sky.mp3' },
+      { id: 'avid', title: 'AVID', meta: 'nZk:mizuki', file: 'assets/music/avid.mp3' },
+      { id: 'voices', title: 'Voices of the Chord', meta: 'feat. Gemie', file: 'assets/music/voices-of-the-chord.mp3' },
+      { id: 'lilas', title: 'LilaS', meta: 'nZk:Honoka Takahashi', file: 'assets/music/lilas.mp3' },
+      { id: 'hands', title: 'Hands Up to the Sky', meta: 'nZk:Laco', file: 'assets/music/hands-up-to-the-sky.mp3' },
     ];
 
     const player = {

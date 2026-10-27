@@ -63,7 +63,8 @@ const LYCORIS_CANDIDATES = [["lycoris.png", "image/png"]];
    accepted extensions so an .m4a works as well as an .mp3. */
 const MUSIC_TRACKS = {
   avid: { stem: "avid", type: "audio/mpeg" },
-  voice: { stem: "voice-of-the-chord", type: "audio/mpeg" },
+  voices: { stem: "voices-of-the-chord", type: "audio/mpeg" },
+  lilas: { stem: "lilas", type: "audio/mpeg" },
   hands: { stem: "hands-up-to-the-sky", type: "audio/mpeg" },
 };
 const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".ogg", ".flac", ".wav"];
