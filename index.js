@@ -24,7 +24,6 @@ const BASE = "/86-ui";
 const METRICS_PATH = `${BASE}/metrics`;
 const AVATAR_PATH = `${BASE}/avatar`;
 const BACKGROUND_PATH = `${BASE}/background`;
-const BLUEPRINT_PATH = `${BASE}/blueprint`;
 
 const ASSET_DIR = fileURLToPath(new URL("./assets/", import.meta.url));
 
@@ -52,11 +51,6 @@ const SCENES = {
     ["background-flowers.png", "image/png"],
   ],
 };
-
-const BLUEPRINT_CANDIDATES = [
-  ["blueprint.webp", "image/webp"],
-  ["blueprint.png", "image/png"],
-];
 
 const BACKGROUND_CANDIDATES = [
   ["background.jpg", "image/jpeg"],
@@ -412,21 +406,19 @@ function apply(ctx) {
 
   const avatarRoute = registerAssetRoute(AVATAR_PATH, AVATAR_CANDIDATES, "avatar");
   const backgroundRoute = registerAssetRoute(BACKGROUND_PATH, BACKGROUND_CANDIDATES, "background");
-  const blueprintRoute = registerAssetRoute(BLUEPRINT_PATH, BLUEPRINT_CANDIDATES, "blueprint");
 
   const dispose = () => {
     try { clearInterval(timer); } catch {}
     try { if (typeof metricsRoute === "function") metricsRoute(); } catch {}
     try { if (typeof avatarRoute === "function") avatarRoute(); } catch {}
     try { if (typeof backgroundRoute === "function") backgroundRoute(); } catch {}
-    try { if (typeof blueprintRoute === "function") blueprintRoute(); } catch {}
   };
 
   readNetwork().then((value) => { networkCache = value || networkCache; }).catch(() => {});
   refreshDarwinMemory().catch(() => {});
   if (typeof ctx?.effect === "function") ctx.effect(() => dispose, `${NS}: routes`);
   try {
-    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}, ${BLUEPRINT_PATH}`);
+    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}`);
   } catch {}
 
   return dispose;

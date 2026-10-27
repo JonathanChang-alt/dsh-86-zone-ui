@@ -136,7 +136,6 @@ window.__ModuleLoader__.load({
       heroMark: true,
       ticker: true,
       tabStyle: true,
-      blueprint: true,
       avatarMode: 'id',
       avatarArt: '00',
       railDefault: false,
@@ -1006,52 +1005,6 @@ window.__ModuleLoader__.load({
         border-radius: 2px;
         padding: 0.08em 0.34em;
         color: #a8dcff !important;
-      }
-    `;
-
-    const BLUEPRINT_CSS = `
-      .e86-blueprint {
-        position: fixed;
-        top: 78px;
-        bottom: 26px;
-        left: var(--e86-sidebar-w, 248px);
-        right: 0;
-        z-index: 1340;
-        pointer-events: none;
-        background-color: var(--e86-glow);
-        opacity: 0.10;
-        mix-blend-mode: screen;
-        -webkit-mask-image: url("/86-ui/blueprint");
-        mask-image: url("/86-ui/blueprint");
-        -webkit-mask-size: auto 100%;
-        mask-size: auto 100%;
-        -webkit-mask-position: center 46%;
-        mask-position: center 46%;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        transition: opacity 0.3s;
-      }
-      .e86-blueprint__sweep {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          to bottom,
-          rgba(255, 255, 255, 0) 42%,
-          rgba(255, 255, 255, 0.55) 49%,
-          rgba(255, 255, 255, 1) 50%,
-          rgba(255, 255, 255, 0.55) 51%,
-          rgba(255, 255, 255, 0) 58%
-        );
-        animation: e86-bp-sweep 9s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        will-change: transform;
-      }
-      @keyframes e86-bp-sweep {
-        0% { transform: translateY(-110%); }
-        55%, 100% { transform: translateY(110%); }
-      }
-      html[data-e86-bp="off"] .e86-blueprint { display: none; }
-      @media (prefers-reduced-motion: reduce) {
-        .e86-blueprint__sweep { animation: none; opacity: 0; }
       }
     `;
 
@@ -2336,20 +2289,6 @@ window.__ModuleLoader__.load({
       );
     }
 
-    /* The M1A4 blueprint sits behind everything as a masked tint: the PNG is
-       pure alpha, the colour comes from CSS, so it can dim with the theme and
-       never fights the text for contrast. A second child carries the scan. */
-    function Blueprint() {
-      const on = useSetting('blueprint')[0];
-      if (!on) return null;
-      return h(React.Fragment, null,
-        h(StyleTag, { css: BLUEPRINT_CSS }),
-        h('div', { className: 'e86-blueprint', 'aria-hidden': true },
-          h('div', { className: 'e86-blueprint__sweep' })
-        )
-      );
-    }
-
     /* ---------------------------------------------------------------- decor */
 
     function Decor() {
@@ -2362,7 +2301,6 @@ window.__ModuleLoader__.load({
         h(StyleTag, { css: SURFACE_CSS }),
         h(StyleTag, { css: ACCOUNT_CSS }),
         h(StyleTag, { css: DECOR_CSS }),
-        h(Blueprint),
         h('div', { className: 'e86-decor', 'aria-hidden': true },
           h('div', { className: 'e86-decor__grid' }),
           h('div', { className: 'e86-decor__scan' }),
@@ -3153,7 +3091,6 @@ window.__ModuleLoader__.load({
       const [heroMark, setHeroMark] = useSetting('heroMark');
       const [ticker, setTicker] = useSetting('ticker');
       const [tabStyle, setTabStyle] = useSetting('tabStyle');
-      const [blueprint, setBlueprint] = useSetting('blueprint');
       const [bgStrength, setBgStrength] = useSetting('bgStrength');
       const [bgScene, setBgScene] = useSetting('bgScene');
       const [logo, setLogo] = useSetting('logo');
@@ -3251,9 +3188,6 @@ window.__ModuleLoader__.load({
         ),
         h(Row, { label: '空会话 86 水印' },
           h(Switch, { value: heroMark, onChange: setHeroMark, label: '空会话 86 水印' })
-        ),
-        h(Row, { label: '机体图纸水印', hint: 'M1A4 破坏神三视图，铺在内容区背景' },
-          h(Switch, { value: blueprint, onChange: setBlueprint, label: '机体图纸水印' })
         ),
         h(Row, { label: '顶栏标签战术化', hint: '给 对话 / 上下文 / 编队 加编号与批示线' },
           h(Switch, { value: tabStyle, onChange: setTabStyle, label: '顶栏标签战术化' })
