@@ -76,6 +76,14 @@ window.__ModuleLoader__.load({
       { id: '03', label: '军帽' },
       { id: '04', label: '侧光' },
     ];
+    const SCENES = [
+      { id: 'rail', label: '铁轨', file: 'background.jpg' },
+      { id: 'flowers', label: '花海', file: 'background-flowers.jpg' },
+    ];
+    function backdropSrc(scene) {
+      return scene && scene !== 'rail' ? '/86-ui/background?scene=' + scene : '/86-ui/background';
+    }
+
     function avatarSrc(art) {
       return art && art !== '00' ? AVATAR_URL + '?art=' + art : AVATAR_URL;
     }
@@ -121,6 +129,7 @@ window.__ModuleLoader__.load({
       logo: true,
       bg: true,
       bgStrength: 'mid',
+      bgScene: 'rail',
       railBright: 28,
       hudBright: 50,
       rain: true,
@@ -277,8 +286,14 @@ window.__ModuleLoader__.load({
         });
         backdropEl.addEventListener('error', () => emitEvent('warn', '背景加载失败'));
         backdropEl.addEventListener('error', () => console.log('[e86] backdrop img ERROR'));
-        backdropEl.src = '/86-ui/background';
+        backdropEl.src = backdropSrc(store.get('bgScene'));
         document.body.insertBefore(backdropEl, document.body.firstChild);
+      }
+      /* Switching scenes keeps the same <img>, so the src has to be re-stamped
+         whenever the setting changes (applyBackdrop runs on every repaint). */
+      const wanted = backdropSrc(store.get('bgScene'));
+      if (backdropEl && backdropEl.getAttribute('src') !== wanted) {
+        backdropEl.src = wanted;
       }
       [document.documentElement, document.body, root].forEach((el) => {
         if (!el) return;
@@ -312,9 +327,8 @@ window.__ModuleLoader__.load({
            conversation column itself got skipped and kept its opaque fill. */
         const floating = style.position === 'fixed' || style.position === 'absolute';
         if (floating && (parseInt(style.zIndex, 10) || 0) >= 40) continue;
-        if (isDarkOpaqueSurface(style.backgroundColor)) {
+        if (style.backgroundColor === BASE_FILL) {
           el.style.setProperty('background-color', 'transparent', 'important');
-          el.style.setProperty('background-image', 'none', 'important');
         }
         /* Every large surface is a candidate, cleared or not: the repair loop
            re-checks these, which catches a reused container that only turns
@@ -449,32 +463,12 @@ window.__ModuleLoader__.load({
     const clearedEls = [];
     const BASE_FILL = 'rgb(4, 8, 15)';
 
-    /* The shell does not paint every large surface with --dsw-alias-bg-base.
-       Measured on 0.2.1-rc.2 with preference=dark, the layout roots compute to
-       rgb(7, 13, 22) / rgb(7, 13, 23) — the sidebar-fill token, a hair lighter
-       than #04080f. An exact string compare against BASE_FILL therefore matches
-       nothing, no surface is cleared, and the backdrop stays hidden behind an
-       opaque column even though its <img> loaded fine.
-
-       Match any dark, opaque surface instead; the size threshold (>= 30% of the
-       viewport) plus the .e86-* exclusion below stay as the real guard, so cards,
-       dialogs and the rail are unaffected. */
-    function isDarkOpaqueSurface(color) {
-      const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(color || '');
-      if (!m) return false;
-      const r = +m[1], g = +m[2], b = +m[3];
-      const a = m[4] === undefined ? 1 : parseFloat(m[4]);
-      if (a < 0.85) return false;                       // already see-through
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      return luma <= 40 && Math.max(r, g, b) <= 56;     // near-black surface
-    }
-
     function considerClear(el) {
       if (!el || el.nodeType !== 1 || sweptEls.has(el)) return;
       if (el.closest && el.closest('.e86-decor, .e86-hud, .e86-rail, .e86-logo, .e86-ticker')) return;
       sweptEls.add(el);
       const style = window.getComputedStyle(el);
-      if (!isDarkOpaqueSurface(style.backgroundColor)) return;
+      if (style.backgroundColor !== BASE_FILL) return;
       const rect = el.getBoundingClientRect();
       if (rect.width * rect.height < window.innerWidth * window.innerHeight * 0.30) return;
       const floating = style.position === 'fixed' || style.position === 'absolute';
@@ -535,9 +529,8 @@ window.__ModuleLoader__.load({
         for (const el of clearedEls) {
           if (!el.isConnected) continue;
           const style = window.getComputedStyle(el);
-          if (isDarkOpaqueSurface(style.backgroundColor)) {
+          if (style.backgroundColor === BASE_FILL) {
             el.style.setProperty('background-color', 'transparent', 'important');
-            el.style.setProperty('background-image', 'none', 'important');
           }
         }
       }, 1400);
@@ -2129,6 +2122,11 @@ window.__ModuleLoader__.load({
         background: rgba(6, 16, 27, 0.7);
         transition: border-color 0.15s, box-shadow 0.15s;
       }
+      .e86-thumbs__btn--scene img {
+        width: 56px;
+        height: 34px;
+      }
+      .e86-thumbs__btn--scene span { font-family: var(--e86-cjk); letter-spacing: 0.04em; font-size: 9px; }
       .e86-thumbs__btn img {
         width: 34px; height: 34px; display: block;
         object-fit: cover; background: #dceefb;
@@ -3094,6 +3092,7 @@ window.__ModuleLoader__.load({
       const [ticker, setTicker] = useSetting('ticker');
       const [tabStyle, setTabStyle] = useSetting('tabStyle');
       const [bgStrength, setBgStrength] = useSetting('bgStrength');
+      const [bgScene, setBgScene] = useSetting('bgScene');
       const [logo, setLogo] = useSetting('logo');
       const [hud, setHud] = useSetting('hud');
       const [avatarMode, setAvatarMode] = useSetting('avatarMode');
@@ -3197,6 +3196,21 @@ window.__ModuleLoader__.load({
           h(Switch, { value: ticker, onChange: setTicker, label: '底部状态条' })
         ),
 
+        h(Row, { label: '背景画面', hint: '铁轨 = assets/background.jpg · 花海 = assets/background-flowers.jpg' },
+          h('div', { className: 'e86-thumbs' },
+            SCENES.map((item) => h('button', {
+              key: item.id,
+              type: 'button',
+              className: 'e86-thumbs__btn e86-thumbs__btn--scene',
+              'data-on': bgScene === item.id ? '1' : '0',
+              title: item.label,
+              onClick: () => setBgScene(item.id),
+            },
+              h('img', { src: backdropSrc(item.id), alt: item.label, draggable: false }),
+              h('span', null, item.label)
+            ))
+          )
+        ),
         h(Row, { label: '背景图', hint: 'assets/background.jpg，缺省时纯色' },
           h(Segmented, {
             value: bgStrength,

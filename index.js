@@ -37,6 +37,21 @@ const AVATAR_CANDIDATES = [
   ["avatar.svg", "image/svg+xml"],
 ];
 
+/* Alternate scenes, chosen with ?scene=. The first entry of each list is
+   preferred; the rest are format fallbacks so a JPEG can be swapped for a PNG
+   without touching code. */
+const SCENES = {
+  rail: [
+    ["background.jpg", "image/jpeg"],
+    ["background.jpeg", "image/jpeg"],
+    ["background.png", "image/png"],
+  ],
+  flowers: [
+    ["background-flowers.jpg", "image/jpeg"],
+    ["background-flowers.png", "image/png"],
+  ],
+};
+
 const BACKGROUND_CANDIDATES = [
   ["background.jpg", "image/jpeg"],
   ["background.jpeg", "image/jpeg"],
@@ -351,6 +366,15 @@ function apply(ctx) {
          Falls back to the normal candidate list so an empty portraits/
          folder never breaks the header. */
       let asset = null;
+      try {
+        const scene = queryParam(req.url, "scene");
+        if (scene && SCENES[scene]) {
+          const picked = resolveAsset(SCENES[scene]);
+          if (picked) asset = picked;
+        }
+      } catch {
+        /* malformed query: fall through to the default asset */
+      }
       try {
         const art = queryParam(req.url, "art");
         if (art && /^[0-9]{2}$/.test(art)) {

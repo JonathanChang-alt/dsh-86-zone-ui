@@ -214,6 +214,22 @@ await new Promise((resolve) => setTimeout(resolve, 400));
     check('avatar ?art=03 status', false, 'assets/portraits/03.png missing');
   }
 
+  /* Scene switching on the background route. */
+  const sceneFile = path.join(ROOT, 'assets', 'background-flowers.jpg');
+  if (fs.existsSync(sceneFile)) {
+    const bytes = fs.readFileSync(sceneFile);
+    const res = call('/86-ui/background?scene=flowers', { method: 'GET', headers: {} });
+    check('background ?scene=flowers status', res.status === 200, String(res.status));
+    check('background ?scene=flowers length', res.headers['Content-Length'] === String(bytes.length), res.headers['Content-Length']);
+    await waitFor(res);
+    check('background ?scene=flowers bytes', res.body().equals(bytes), `${res.body().length} bytes`);
+  } else {
+    check('background ?scene=flowers status', false, 'assets/background-flowers.jpg missing');
+  }
+
+  const bogusScene = call('/86-ui/background?scene=nope', { method: 'GET', headers: {} });
+  check('background ?scene=nope falls back', bogusScene.status === 200, String(bogusScene.status));
+
   const unknown = call('/86-ui/avatar?art=99', { method: 'GET', headers: {} });
   check('avatar ?art=99 falls back', unknown.status === 200 && unknown.headers['Content-Length'] === String(shippedBytes.length),
     String(unknown.status));

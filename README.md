@@ -15,7 +15,8 @@
 
 | 功能 | 说明 |
 |---|---|
-| 背景图 | 铁轨夜景铺在 `<html>` 上，基础面令牌转半透明让图透出来；四档强度（关 / 淡 / 中 / 浓）。切对话时会被壳层重置，插件用增量扫描 + 定期复检把它拉回来 |
+| 背景画面 | 两套可选：**铁轨夜景**（`background.jpg`）与**花海**（`background-flowers.jpg`，由官方主视觉风格化而来），设置页一键切换 |
+| 背景图 | 场景图铺在 `<html>` 上，基础面令牌转半透明让图透出来；四档强度（关 / 淡 / 中 / 浓）。切对话时会被壳层重置，插件用增量扫描 + 定期复检把它拉回来 |
 | 左上 86 锁标 | 大号 86 + 片假名 + `[EIGHTY SIX]` 框，四层动效：扫描光带 6.5s、数字色散抖动 5.7s、片假名解码闪烁 4.3s、方框脉冲 3.9s —— 四个周期互质，永不整齐划一 |
 | 右上 HUD 头像 | 线稿头像 + 四角框 + `VLADILENA MILIZÉ / HANDLER 01` 铭牌 + Para-RAID 指示灯；**5 张头像可切换**，状态台展开时放大居中变成该列页眉 |
 | 装饰层 | 扫描线 / 技术网格 / 暗角 / 竖向扫光带，全部 `pointer-events: none` |
@@ -173,7 +174,6 @@ DSH 的插件管理器有「添加本地插件」，指向 clone 下来的目录
 | 有设置页但没有头像 | `assets/avatar.png` 没被读到，确认 clone 完整 |
 | 整个界面变黑或没反应 | 同时装了两个主题插件，先移除另一个 |
 | 头像变成占位图形 | `/86-ui/avatar` 返回 404，检查 `assets/` 目录是否存在 |
-| **事件流说「背景已加载」但画面看不到背景** | 大面板实际底色不是 `rgb(4,8,15)`（常见是 `rgb(7,13,22)`），清扫判定落空；见 PITFALLS #11 |
 | 指标全是 `—` | 宿主没重启（`index.js` 改动必须重启，刷新不够） |
 
 > 只有宿主文件（`index.js`）改动需要重启；客户端（`client.js`）刷新界面即可。
@@ -205,7 +205,7 @@ pnpm add link:$env:USERPROFILE\Documents\plugins\dsh-86-zone-ui
 |---|---|
 | `GET /86-ui/metrics` | CPU / 内存 / 磁盘 / 负载 / 网络吞吐 / RSS / uptime |
 | `GET /86-ui/avatar?art=NN` | 头像；`NN` ∈ `01..04` 时取 `assets/portraits/NN.png`，其余回退 `assets/avatar.png` |
-| `GET /86-ui/background` | 背景图 |
+| `GET /86-ui/background` | 背景图；`?scene=rail\|flowers` 选择画面，未知值回退默认 |
 
 都先过 `connection.requestRejection(req)` 鉴权闸门。
 
@@ -219,6 +219,7 @@ client.js          浏览器侧全部内容，单文件（约 125 KB）
 index.js           宿主侧路由与采样（约 12 KB）
 assets/            背景图、默认头像、4 张可选头像
 docs/              README 用的截图（preview/ 是工作目录，不进仓库）
+assets/background-flowers.jpg   花海场景
 scripts/           头像描线与主视觉合成脚本（PIL）
 tests/             205 项检查，见下
 install.sh         一键安装（macOS / Linux）
