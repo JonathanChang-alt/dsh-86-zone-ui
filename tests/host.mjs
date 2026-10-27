@@ -55,13 +55,14 @@ const ctx = {
 };
 
 const dispose = apply(ctx);
-check('routes registered', routes.size === 6, [...routes.keys()].join(', '));
+check('routes registered', routes.size === 7, [...routes.keys()].join(', '));
 check('metrics route', routes.has('/86-ui/metrics'));
 check('avatar route', routes.has('/86-ui/avatar'));
 check('background route', routes.has('/86-ui/background'));
 check('blueprint top route', routes.has('/86-ui/blueprint/top'));
 check('blueprint bottom route', routes.has('/86-ui/blueprint/bottom'));
 check('lycoris route', routes.has('/86-ui/lycoris'));
+check('music route', routes.has('/86-ui/music'));
 check('dispose returned', typeof dispose === 'function');
 
 /* ------------------------------------------------------------ fake exchage */
@@ -228,6 +229,28 @@ await new Promise((resolve) => setTimeout(resolve, 400));
     check('background ?scene=flowers bytes', res.body().equals(bytes), `${res.body().length} bytes`);
   } else {
     check('background ?scene=flowers status', false, 'assets/background-flowers.jpg missing');
+  }
+
+  /* Music: no file shipped, so the 404 path is the one that must be honest;
+     a temporary file exercises the range path. */
+  const noTrack = call('/86-ui/music?track=unknown', { method: 'GET', headers: {} });
+  check('music unknown id 404', noTrack.status === 404, String(noTrack.status));
+
+  const musicDir = path.join(ROOT, 'assets', 'music');
+  const probe = path.join(musicDir, 'avid.mp3');
+  if (fs.existsSync(probe)) {
+    const full = call('/86-ui/music?track=avid', { method: 'GET', headers: {} });
+    check('music full 200', full.status === 200, String(full.status));
+    check('music advertises ranges', full.headers['Accept-Ranges'] === 'bytes', String(full.headers['Accept-Ranges']));
+    const size = Number(full.headers['Content-Length']);
+    const part = call('/86-ui/music?track=avid', { method: 'GET', headers: { range: 'bytes=0-99' } });
+    check('music range 206', part.status === 206, String(part.status));
+    check('music range length 100', part.headers['Content-Length'] === '100', String(part.headers['Content-Length']));
+    check('music range header', part.headers['Content-Range'] === `bytes 0-99/${size}`, String(part.headers['Content-Range']));
+  } else {
+    const missing = call('/86-ui/music?track=avid', { method: 'GET', headers: {} });
+    check('music missing file 404', missing.status === 404, String(missing.status));
+    check('music 404 names the file', /avid/.test(missing.text()), missing.text().slice(0, 80));
   }
 
   const bogusScene = call('/86-ui/background?scene=nope', { method: 'GET', headers: {} });

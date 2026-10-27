@@ -6,6 +6,14 @@
 node_modules/
 package-lock.json
 
+# copyrighted audio: the player serves whatever you drop in here, but the
+# files themselves must never be committed
+assets/music/*.mp3
+assets/music/*.m4a
+assets/music/*.ogg
+assets/music/*.flac
+assets/music/*.wav
+
 # runtime output from the plugin itself
 debug-report.json
 

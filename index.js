@@ -27,6 +27,7 @@ const BACKGROUND_PATH = `${BASE}/background`;
 const BLUEPRINT_TOP_PATH = `${BASE}/blueprint/top`;
 const BLUEPRINT_BOTTOM_PATH = `${BASE}/blueprint/bottom`;
 const LYCORIS_PATH = `${BASE}/lycoris`;
+const MUSIC_PATH = `${BASE}/music`;
 
 const ASSET_DIR = fileURLToPath(new URL("./assets/", import.meta.url));
 
@@ -56,6 +57,16 @@ const SCENES = {
 };
 
 const LYCORIS_CANDIDATES = [["lycoris.png", "image/png"]];
+
+/* The three tracks are copyrighted, so nothing is shipped: the route only
+   serves files the user drops into assets/music/. Each id maps to a list of
+   accepted extensions so an .m4a works as well as an .mp3. */
+const MUSIC_TRACKS = {
+  avid: { stem: "avid", type: "audio/mpeg" },
+  voice: { stem: "voice-of-the-chord", type: "audio/mpeg" },
+  hands: { stem: "hands-up-to-the-sky", type: "audio/mpeg" },
+};
+const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".ogg", ".flac", ".wav"];
 const BLUEPRINT_TOP_CANDIDATES = [["blueprint-top.png", "image/png"]];
 const BLUEPRINT_BOTTOM_CANDIDATES = [["blueprint-bottom.png", "image/png"]];
 
@@ -417,6 +428,82 @@ function apply(ctx) {
   const blueprintBottomRoute = registerAssetRoute(BLUEPRINT_BOTTOM_PATH, BLUEPRINT_BOTTOM_CANDIDATES, "blueprint bottom");
   const lycorisRoute = registerAssetRoute(LYCORIS_PATH, LYCORIS_CANDIDATES, "lycoris");
 
+  /* Audio needs byte ranges: without them the browser cannot seek, and some
+     engines refuse to play at all. */
+  const musicRoute = webServer.register({
+    kind: "exact",
+    path: MUSIC_PATH,
+    handler: (req, res) => {
+      if (rejected(req, res)) return;
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        sendJson(res, 405, { ok: false, error: "method not allowed" });
+        return;
+      }
+      const id = queryParam(req.url, "track");
+      const track = id && MUSIC_TRACKS[id];
+      if (!track) {
+        sendJson(res, 404, { ok: false, error: "unknown track" });
+        return;
+      }
+      let file = null;
+      for (const ext of MUSIC_EXTENSIONS) {
+        const candidate = ASSET_DIR + "music/" + track.stem + ext;
+        try {
+          const stat = fs.statSync(candidate);
+          if (stat.isFile() && stat.size > 0) { file = { path: candidate, size: stat.size }; break; }
+        } catch {
+          /* try the next extension */
+        }
+      }
+      if (!file) {
+        sendJson(res, 404, { ok: false, error: `no ${track.stem}.* in assets/music/` });
+        return;
+      }
+
+      const type = track.type;
+      const range = req.headers && req.headers.range;
+      const match = typeof range === "string" ? /^bytes=(\d*)-(\d*)$/.exec(range.trim()) : null;
+      if (match) {
+        let start = match[1] === "" ? null : Number(match[1]);
+        let end = match[2] === "" ? null : Number(match[2]);
+        if (start === null && end !== null) {
+          start = Math.max(0, file.size - end);   // suffix range: last N bytes
+          end = file.size - 1;
+        }
+        if (start !== null && end === null) end = file.size - 1;
+        if (start === null || end === null || start > end || start >= file.size) {
+          res.writeHead(416, { "Content-Range": `bytes */${file.size}` });
+          res.end();
+          return;
+        }
+        end = Math.min(end, file.size - 1);
+        res.writeHead(206, {
+          "Content-Type": type,
+          "Content-Length": String(end - start + 1),
+          "Content-Range": `bytes ${start}-${end}/${file.size}`,
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "no-cache",
+        });
+        if (req.method === "HEAD") { res.end(); return; }
+        const stream = fs.createReadStream(file.path, { start, end });
+        stream.on("error", () => { try { res.destroy(); } catch { /* gone */ } });
+        stream.pipe(res);
+        return;
+      }
+
+      res.writeHead(200, {
+        "Content-Type": type,
+        "Content-Length": String(file.size),
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-cache",
+      });
+      if (req.method === "HEAD") { res.end(); return; }
+      const stream = fs.createReadStream(file.path);
+      stream.on("error", () => { try { res.destroy(); } catch { /* gone */ } });
+      stream.pipe(res);
+    },
+  });
+
   const dispose = () => {
     try { clearInterval(timer); } catch {}
     try { if (typeof metricsRoute === "function") metricsRoute(); } catch {}
@@ -425,13 +512,14 @@ function apply(ctx) {
     try { if (typeof blueprintTopRoute === "function") blueprintTopRoute(); } catch {}
     try { if (typeof blueprintBottomRoute === "function") blueprintBottomRoute(); } catch {}
     try { if (typeof lycorisRoute === "function") lycorisRoute(); } catch {}
+    try { if (typeof musicRoute === "function") musicRoute(); } catch {}
   };
 
   readNetwork().then((value) => { networkCache = value || networkCache; }).catch(() => {});
   refreshDarwinMemory().catch(() => {});
   if (typeof ctx?.effect === "function") ctx.effect(() => dispose, `${NS}: routes`);
   try {
-    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}, ${BLUEPRINT_TOP_PATH}, ${BLUEPRINT_BOTTOM_PATH}, ${LYCORIS_PATH}`);
+    ctx?.logger?.info?.(`[${NS}] routes ready: ${METRICS_PATH}, ${AVATAR_PATH}, ${BACKGROUND_PATH}, ${BLUEPRINT_TOP_PATH}, ${BLUEPRINT_BOTTOM_PATH}, ${LYCORIS_PATH}, ${MUSIC_PATH}`);
   } catch {}
 
   return dispose;

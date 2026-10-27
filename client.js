@@ -89,6 +89,201 @@ window.__ModuleLoader__.load({
     }
 
 
+    /* --------------------------------------------------------------- audio
+       One <audio> element owns playback, mounted with the decor layer rather
+       than inside the rail: closing the panel must not kill the music. The
+       files are copyrighted, so nothing ships — the host serves whatever sits
+       in assets/music/, and a missing file degrades to a plain notice. */
+    const TRACKS = [
+      { id: 'avid', title: 'AVID', meta: 'SawanoHiroyuki[nZk]', file: 'assets/music/avid.mp3' },
+      { id: 'voice', title: 'Voice of the Chord', meta: 'SawanoHiroyuki[nZk]', file: 'assets/music/voice-of-the-chord.mp3' },
+      { id: 'hands', title: 'Hands Up to the Sky', meta: 'SawanoHiroyuki[nZk]', file: 'assets/music/hands-up-to-the-sky.mp3' },
+    ];
+
+    const player = {
+      audio: null,
+      state: { track: 'avid', playing: false, current: 0, duration: 0, volume: 0.6, error: '', loading: false },
+      listeners: new Set(),
+      emit() { Array.from(this.listeners).forEach((fn) => { try { fn(); } catch (e) { /* ignore */ } }); },
+      patch(partial) { this.state = Object.assign({}, this.state, partial); this.emit(); },
+    };
+
+    function trackById(id) {
+      return TRACKS.filter((t) => t.id === id)[0] || TRACKS[0];
+    }
+
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+      const total = Math.floor(seconds);
+      return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+    }
+
+    const PLAYER_CSS = `
+      .e86-music { display: grid; gap: 7px; }
+      .e86-music__list { display: grid; gap: 2px; }
+      .e86-music__row {
+        display: grid;
+        grid-template-columns: 16px 1fr auto;
+        align-items: baseline;
+        gap: 7px;
+        padding: 4px 2px;
+        background: none;
+        border: 0;
+        text-align: left;
+        cursor: pointer;
+        color: #9dbdd6;
+        font: 10px/1.3 var(--e86-cjk);
+        letter-spacing: 0.04em;
+      }
+      .e86-music__row:hover { color: #e8f6ff; }
+      .e86-music__row[data-on="1"] { color: #59e0ff; }
+      .e86-music__row i {
+        font: 8px/1 var(--e86-mono);
+        font-style: normal;
+        color: #4f7593;
+      }
+      .e86-music__row[data-on="1"] i { color: #59e0ff; }
+      .e86-music__row em {
+        font: 7.5px/1 var(--e86-mono);
+        font-style: normal;
+        color: #5f89a8;
+        letter-spacing: 0.06em;
+      }
+      .e86-music__bar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 8px;
+        padding-top: 6px;
+        border-top: 1px dashed rgba(63, 182, 255, 0.16);
+      }
+      .e86-music__play {
+        width: 24px; height: 24px;
+        display: grid; place-items: center;
+        border: 1px solid rgba(63, 182, 255, 0.45);
+        background: rgba(63, 182, 255, 0.12);
+        color: #e8f6ff;
+        cursor: pointer;
+        font-size: 10px;
+      }
+      .e86-music__play:hover { background: rgba(63, 182, 255, 0.22); }
+      .e86-music__time { font: 8px/1 var(--e86-mono); color: #7099b8; letter-spacing: 0.06em; }
+      .e86-music input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 12px;
+        background: none;
+        cursor: pointer;
+      }
+      .e86-music input[type="range"]::-webkit-slider-runnable-track {
+        height: 2px;
+        background: rgba(63, 182, 255, 0.28);
+      }
+      .e86-music input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 7px; height: 7px;
+        margin-top: -2.5px;
+        border-radius: 50%;
+        background: var(--e86-glow);
+        box-shadow: 0 0 6px rgba(89, 224, 255, 0.8);
+      }
+      .e86-music__vol { display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 6px; }
+      .e86-music__vol span { font: 8px/1 var(--e86-mono); color: #5f89a8; letter-spacing: 0.1em; }
+      .e86-music__note {
+        font: 8px/1.5 var(--e86-mono);
+        color: #6d90ab;
+        letter-spacing: 0.06em;
+        word-break: break-all;
+      }
+    `;
+
+    function AudioEngine() {
+      const on = useSetting('enabled')[0];
+      React.useEffect(() => {
+        if (!on) return undefined;
+        const audio = new window.Audio();
+        audio.preload = 'metadata';
+        audio.volume = player.state.volume;
+        player.audio = audio;
+
+        const sync = () => player.patch({
+          current: Number.isFinite(audio.currentTime) ? audio.currentTime : 0,
+          duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+        });
+        const onEnded = () => {
+          const index = TRACKS.findIndex((t) => t.id === player.state.track);
+          const next = TRACKS[(index + 1) % TRACKS.length];
+          load(next.id, true);
+        };
+        const onError = () => {
+          player.patch({ playing: false, loading: false, error: trackById(player.state.track).file });
+        };
+        const onPlay = () => player.patch({ playing: true, error: '' });
+        const onPause = () => player.patch({ playing: false });
+
+        audio.addEventListener('timeupdate', sync);
+        audio.addEventListener('loadedmetadata', sync);
+        audio.addEventListener('ended', onEnded);
+        audio.addEventListener('error', onError);
+        audio.addEventListener('play', onPlay);
+        audio.addEventListener('pause', onPause);
+
+        return () => {
+          audio.pause();
+          audio.removeEventListener('timeupdate', sync);
+          audio.removeEventListener('loadedmetadata', sync);
+          audio.removeEventListener('ended', onEnded);
+          audio.removeEventListener('error', onError);
+          audio.removeEventListener('play', onPlay);
+          audio.removeEventListener('pause', onPause);
+          player.audio = null;
+        };
+      }, [on]);
+      return null;
+    }
+
+    function load(trackId, play) {
+      const audio = player.audio;
+      const track = trackById(trackId);
+      if (!audio) return;
+      player.patch({ track: track.id, current: 0, duration: 0, error: '', loading: true });
+      audio.src = '/86-ui/music?track=' + track.id;
+      audio.load();
+      if (play) {
+        const attempt = audio.play();
+        if (attempt && typeof attempt.catch === 'function') {
+          attempt.catch(() => player.patch({ playing: false, loading: false }));
+        }
+      }
+    }
+
+    function toggle() {
+      const audio = player.audio;
+      if (!audio) return;
+      if (!audio.src) { load(player.state.track, true); return; }
+      if (audio.paused) {
+        const attempt = audio.play();
+        if (attempt && typeof attempt.catch === 'function') {
+          attempt.catch(() => player.patch({ playing: false }));
+        }
+      } else {
+        audio.pause();
+      }
+    }
+
+    function seekTo(ratio) {
+      const audio = player.audio;
+      if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      audio.currentTime = Math.max(0, Math.min(1, ratio)) * audio.duration;
+    }
+
+    function setVolume(value) {
+      const audio = player.audio;
+      if (audio) audio.volume = value;
+      player.patch({ volume: value });
+    }
+
     /* ------------------------------------------------------------ event bus
        Fifty entries, strings only, appended only when something actually
        happens. No console hook, no DOM observer, no polling. */
@@ -2511,6 +2706,7 @@ window.__ModuleLoader__.load({
         h(StyleTag, { css: SURFACE_CSS }),
         h(StyleTag, { css: ACCOUNT_CSS }),
         h(StyleTag, { css: DECOR_CSS }),
+        h(AudioEngine),
         h(HeroFlower),
         h('div', { className: 'e86-decor', 'aria-hidden': true },
           h('div', { className: 'e86-decor__grid' }),
@@ -3038,6 +3234,73 @@ window.__ModuleLoader__.load({
       );
     }
 
+    function MusicPanel() {
+      const [, force] = React.useState(0);
+      React.useEffect(() => {
+        const fn = () => force((n) => n + 1);
+        player.listeners.add(fn);
+        return () => { player.listeners.delete(fn); };
+      }, []);
+      const st = player.state;
+      const track = trackById(st.track);
+      const progress = st.duration > 0 ? Math.min(1, st.current / st.duration) : 0;
+
+      return h(RailSection, {
+        id: 'music',
+        label: 'COMMS',
+        right: h('u', null, st.playing ? 'PLAY' : st.error ? 'OFF' : 'IDLE'),
+      },
+        h(StyleTag, { css: PLAYER_CSS }),
+        h('div', { className: 'e86-music' },
+          h('div', { className: 'e86-music__list' },
+            TRACKS.map((item, index) => h('button', {
+              key: item.id,
+              type: 'button',
+              className: 'e86-music__row',
+              'data-on': st.track === item.id ? '1' : '0',
+              onClick: () => load(item.id, true),
+            },
+              h('i', null, String(index + 1).padStart(2, '0')),
+              h('span', null, item.title),
+              h('em', null, item.meta)
+            ))
+          ),
+          h('div', { className: 'e86-music__bar' },
+            h('button', {
+              type: 'button',
+              className: 'e86-music__play',
+              onClick: toggle,
+              'aria-label': st.playing ? '暂停' : '播放',
+            }, st.playing ? '❚❚' : '▶'),
+            h('input', {
+              type: 'range',
+              min: 0,
+              max: 1000,
+              value: Math.round(progress * 1000),
+              'aria-label': '进度',
+              onChange: (event) => seekTo(Number(event.target.value) / 1000),
+            }),
+            h('span', { className: 'e86-music__time' },
+              formatTime(st.current) + ' / ' + formatTime(st.duration))
+          ),
+          h('div', { className: 'e86-music__vol' },
+            h('span', null, 'VOL'),
+            h('input', {
+              type: 'range',
+              min: 0,
+              max: 100,
+              value: Math.round(st.volume * 100),
+              'aria-label': '音量',
+              onChange: (event) => setVolume(Number(event.target.value) / 100),
+            })
+          ),
+          st.error
+            ? h('div', { className: 'e86-music__note' }, '音源未接入 → ' + st.error)
+            : h('div', { className: 'e86-music__note' }, track.title + ' · ' + track.meta)
+        )
+      );
+    }
+
     function CommsStub() {
       return h('div', { className: 'e86-comms' },
         h('button', { type: 'button', disabled: true, title: '音源未接入' }, '▶'),
@@ -3179,7 +3442,7 @@ window.__ModuleLoader__.load({
             h(LinkWave, { data: metrics }),
             h(EventLog),
             h(BlueprintPage),
-            h('div', { className: 'e86-rail__section' }, h(CommsStub))
+            h(MusicPanel)
           ),
           h('div', { className: 'e86-rail__foot' },
             h('div', { className: 'e86-rail__host' },
