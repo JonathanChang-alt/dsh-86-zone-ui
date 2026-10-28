@@ -333,6 +333,7 @@ window.__ModuleLoader__.load({
       ticker: true,
       tabStyle: true,
       heroFlower: true,
+      hudMotion: true,
       avatarMode: 'id',
       avatarArt: '00',
       railDefault: false,
@@ -845,6 +846,7 @@ window.__ModuleLoader__.load({
       root.setAttribute('data-e86-grid', store.get('grid') ? 'on' : 'off');
       root.setAttribute('data-e86-vignette', store.get('vignette') ? 'on' : 'off');
       root.setAttribute('data-e86-hud', store.get('hud') ? 'on' : 'off');
+      root.setAttribute('data-e86-motion', store.get('hudMotion') ? 'on' : 'off');
       root.setAttribute('data-e86-logo', store.get('logo') ? 'on' : 'off');
       root.setAttribute('data-e86-rail-open', store.get('railOpen') ? 'on' : 'off');
       /* The backdrop lives on <html> as a background-image. Painting it there
@@ -1500,6 +1502,17 @@ window.__ModuleLoader__.load({
         85% { transform: translate(-1px, 0.5px); }
         86% { transform: translate(1px, 0); }
       }
+      .e86-hud__pulse {
+        position: absolute;
+        inset: -1px;
+        pointer-events: none;
+        z-index: 4;
+        animation: e86-hud-pulse 0.62s ease-out 1 both;
+      }
+      @keyframes e86-hud-pulse {
+        0% { box-shadow: 0 0 0 2px rgba(210, 248, 255, 0.95) inset, 0 0 30px rgba(89, 224, 255, 0.85), 0 0 60px rgba(89, 224, 255, 0.4); }
+        100% { box-shadow: 0 0 0 0 rgba(210, 248, 255, 0) inset, 0 0 0 rgba(89, 224, 255, 0); }
+      }
       .e86-hud__tear {
         position: absolute;
         left: 0;
@@ -1547,6 +1560,16 @@ window.__ModuleLoader__.load({
         animation: e86-hud-flicker 7s steps(1, end) infinite,
                    e86-hud-tremor-b 5.3s steps(1, end) infinite;
       }
+      /* 换头像时重挂 <img>，这段动画随之重播 —— 像被重新画了一遍 */
+      html[data-e86-motion="on"] .e86-hud__img {
+        animation: e86-hud-draw 1.15s cubic-bezier(0.4, 0, 0.35, 1) 1 forwards,
+                   e86-hud-flicker 7s steps(1, end) infinite,
+                   e86-hud-tremor-b 5.3s steps(1, end) infinite;
+      }
+      @keyframes e86-hud-draw {
+        0% { clip-path: inset(0 0 100% 0); }
+        100% { clip-path: inset(0 0 0 0); }
+      }
       @keyframes e86-hud-tremor-b {
         0%, 71%, 100% { transform: scale(1.05) translate(0, 0); }
         72% { transform: scale(1.05) translate(0.8px, -0.6px); }
@@ -1559,7 +1582,23 @@ window.__ModuleLoader__.load({
         93% { opacity: 0.88; }
         94% { opacity: 1; }
       }
-      .e86-hud__frame { animation: e86-hud-glow 4.6s ease-in-out infinite; }
+      .e86-hud__frame {
+        animation: e86-hud-glow 4.6s ease-in-out infinite,
+                   e86-hud-breath 9s ease-in-out infinite;
+      }
+      @keyframes e86-hud-breath {
+        0%, 100% { transform: scale(1) translateY(0); }
+        50% { transform: scale(1.012) translateY(-1.5px); }
+      }
+      /* 心跳：整块 ID 卡一起微缩，和帧内的呼吸错开周期 */
+      html[data-e86-motion="on"] .e86-hud { animation: e86-hud-beat 3.7s ease-out infinite; }
+      @keyframes e86-hud-beat {
+        0%, 100% { transform: scale(1); }
+        10% { transform: scale(0.994); }
+        18% { transform: scale(1); }
+        28% { transform: scale(0.997); }
+        36% { transform: scale(1); }
+      }
       @keyframes e86-hud-glow {
         0%, 100% {
           box-shadow:
@@ -2269,7 +2308,8 @@ window.__ModuleLoader__.load({
       @media (prefers-reduced-motion: reduce) {
         .e86-radar__sweep { animation: none; opacity: 0.35; }
         .e86-radar__blip { animation: none; opacity: 0.8; }
-        .e86-hud__sweep, .e86-hud__img, .e86-hud__frame, .e86-hud__frame::after,
+        .e86-hud, .e86-hud__sweep, .e86-hud__img, .e86-hud__frame, .e86-hud__frame::after,
+        .e86-hud__pulse,
         .e86-hud__art, .e86-hud__tear { animation: none !important; }
         /* Signal tremor: two coprime periods so the shake never feels like a loop,
          a 2px tear bar that flashes on the beat, and a hard-stepped offset so it
@@ -2281,6 +2321,17 @@ window.__ModuleLoader__.load({
         84% { transform: translate(1.5px, -1px); }
         85% { transform: translate(-1px, 0.5px); }
         86% { transform: translate(1px, 0); }
+      }
+      .e86-hud__pulse {
+        position: absolute;
+        inset: -1px;
+        pointer-events: none;
+        z-index: 4;
+        animation: e86-hud-pulse 0.62s ease-out 1 both;
+      }
+      @keyframes e86-hud-pulse {
+        0% { box-shadow: 0 0 0 2px rgba(210, 248, 255, 0.95) inset, 0 0 30px rgba(89, 224, 255, 0.85), 0 0 60px rgba(89, 224, 255, 0.4); }
+        100% { box-shadow: 0 0 0 0 rgba(210, 248, 255, 0) inset, 0 0 0 rgba(89, 224, 255, 0); }
       }
       .e86-hud__tear {
         position: absolute;
@@ -2903,6 +2954,14 @@ window.__ModuleLoader__.load({
       const imgRef = React.useRef(null);
 
       const source = avatarSrc(art);
+      /* Every new event in the bus flashes the frame once: the portrait stops
+         being decoration and starts acknowledging that something happened. */
+      const [pulseId, setPulseId] = React.useState(0);
+      React.useEffect(() => {
+        const fn = () => setPulseId((n) => n + 1);
+        events.listeners.add(fn);
+        return () => { events.listeners.delete(fn); };
+      }, []);
 
       /* The pale card behind the line art is what makes multiply produce a
          bright ID card. When another stylesheet wins, the art blends with the
@@ -2943,6 +3002,7 @@ window.__ModuleLoader__.load({
                 ? h(Emblem)
                 : h('img', {
                     ref: imgRef,
+                    key: source,
                     className: 'e86-hud__img',
                     src: source,
                     alt: '',
@@ -2950,6 +3010,7 @@ window.__ModuleLoader__.load({
                     onError: () => setFailed(true),
                   })
             ),
+            pulseId > 0 ? h('span', { key: pulseId, className: 'e86-hud__pulse', 'aria-hidden': true }) : null,
             h('div', { className: 'e86-hud__sweep', 'aria-hidden': true }),
             h('div', { className: 'e86-hud__tear', 'aria-hidden': true }),
             h('span', { className: 'e86-hud__corner e86-hud__corner--tl' }),
@@ -3574,6 +3635,7 @@ window.__ModuleLoader__.load({
       const [hud, setHud] = useSetting('hud');
       const [avatarMode, setAvatarMode] = useSetting('avatarMode');
       const [avatarArt, setAvatarArt] = useSetting('avatarArt');
+      const [hudMotion, setHudMotion] = useSetting('hudMotion');
       /* Is the host new enough to serve ?art=NN? Two fetches, compared by
          length: if the portrait equals the default, the query is being
          ignored and the picker would silently do nothing. */
@@ -3665,6 +3727,9 @@ window.__ModuleLoader__.load({
         ),
         h(Row, { label: '空会话 86 水印' },
           h(Switch, { value: heroMark, onChange: setHeroMark, label: '空会话 86 水印' })
+        ),
+        h(Row, { label: '头像动态', hint: '呼吸 / 心跳 / 换头像时描线 / 事件闪烁' },
+          h(Switch, { value: hudMotion, onChange: setHudMotion, label: '头像动态' })
         ),
         h(Row, { label: '空会话彼岸花', hint: '只在没有对话时从右下角探出' },
           h(Switch, { value: heroFlower, onChange: setHeroFlower, label: '空会话彼岸花' })
@@ -3995,6 +4060,7 @@ window.__ModuleLoader__.load({
               root.removeAttribute('data-e86-grid');
               root.removeAttribute('data-e86-vignette');
               root.removeAttribute('data-e86-hud');
+      root.removeAttribute('data-e86-motion');
               root.style.removeProperty('--e86-line');
               root.style.removeProperty('--e86-glow');
               root.style.removeProperty('--e86-dim');
