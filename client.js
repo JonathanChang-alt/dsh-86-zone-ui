@@ -1584,20 +1584,20 @@ window.__ModuleLoader__.load({
       }
       .e86-hud__frame {
         animation: e86-hud-glow 4.6s ease-in-out infinite,
-                   e86-hud-breath 9s ease-in-out infinite;
+                   e86-hud-breath 7s ease-in-out infinite;
       }
       @keyframes e86-hud-breath {
         0%, 100% { transform: scale(1) translateY(0); }
-        50% { transform: scale(1.012) translateY(-1.5px); }
+        50% { transform: scale(1.032) translateY(-3px); }
       }
       /* 心跳：整块 ID 卡一起微缩，和帧内的呼吸错开周期 */
       html[data-e86-motion="on"] .e86-hud { animation: e86-hud-beat 3.7s ease-out infinite; }
       @keyframes e86-hud-beat {
-        0%, 100% { transform: scale(1); }
-        10% { transform: scale(0.994); }
-        18% { transform: scale(1); }
-        28% { transform: scale(0.997); }
-        36% { transform: scale(1); }
+        0%, 100% { transform: scale(1); filter: none; }
+        10% { transform: scale(0.982); filter: brightness(1.08); }
+        18% { transform: scale(1); filter: none; }
+        28% { transform: scale(0.988); filter: brightness(1.04); }
+        36% { transform: scale(1); filter: none; }
       }
       @keyframes e86-hud-glow {
         0%, 100% {
@@ -1676,6 +1676,17 @@ window.__ModuleLoader__.load({
         height: 70%;
         color: var(--e86-line);
         filter: drop-shadow(0 0 7px rgba(89, 224, 255, 0.55));
+      }
+      html[data-e86-motion="on"] .e86-hud__corner {
+        animation: e86-hud-corner 14s steps(1, end) infinite;
+      }
+      html[data-e86-motion="on"] .e86-hud__corner--tr { animation-delay: 0.18s; }
+      html[data-e86-motion="on"] .e86-hud__corner--br { animation-delay: 0.36s; }
+      html[data-e86-motion="on"] .e86-hud__corner--bl { animation-delay: 0.54s; }
+      @keyframes e86-hud-corner {
+        0%, 88%, 100% { opacity: 0.55; }
+        89% { opacity: 1; filter: drop-shadow(0 0 6px rgba(89, 224, 255, 0.95)); }
+        91% { opacity: 0.75; }
       }
       .e86-hud__corner {
         position: absolute;
